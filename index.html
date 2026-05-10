@@ -16,9 +16,13 @@
     --kac-gold: #f0c869;
     --bg: #0a0c10;
     --panel: #161a21;
+    --panel-2: #1f242d;
     --line: #262b34;
     --text: #ffffff;
     --text-dim: #8b9098;
+    --green: #2ecc71;
+    --orange: #f39c12;
+    --red: #ff4757;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -39,14 +43,16 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 16px;
+    padding: 0 14px;
     background: linear-gradient(180deg, #1a1f28, #11151c);
     border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
   }
   .brand {
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
   }
   .logo-mark {
     width: 32px;
@@ -59,6 +65,7 @@
     font-weight: 800;
     font-size: 12px;
     color: #fff;
+    flex-shrink: 0;
   }
   .brand-text {
     font-size: 12px;
@@ -71,12 +78,16 @@
     color: var(--text-dim);
     letter-spacing: 1px;
     text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .header-right {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    flex-shrink: 0;
   }
   .status {
     display: flex;
@@ -91,12 +102,12 @@
     border: 1px solid var(--line);
   }
   .status.connected {
-    border-color: #2ecc71;
-    color: #2ecc71;
+    border-color: var(--green);
+    color: var(--green);
   }
   .status.connected .dot {
-    background: #2ecc71;
-    box-shadow: 0 0 8px #2ecc71;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
     animation: pulse 1.5s infinite;
   }
   .status.waiting {
@@ -114,13 +125,82 @@
     50% { opacity: 0.4; }
   }
 
-  /* Controls (size adjust) */
-  .controls {
+  /* Tab switcher */
+  .tabs {
     display: flex;
     gap: 4px;
   }
-  .ctrl-btn {
+  .tab-btn {
     background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    padding: 5px 12px;
+    font-size: 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+  }
+  .tab-btn.active {
+    background: var(--kac-wine);
+    border-color: var(--kac-wine);
+    color: #fff;
+  }
+  .tab-btn .badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--red);
+    color: white;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 8px;
+    display: none;
+    min-width: 16px;
+    text-align: center;
+  }
+  .tab-btn .badge.show { display: block; }
+
+  /* Main area */
+  .main {
+    height: calc(100vh - 48px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ============ SUBTITLE VIEW ============ */
+  .view {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .view.active { display: flex; }
+
+  .subtitle-stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 20px 28px;
+    overflow: hidden;
+  }
+
+  .subtitle-controls {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .ctrl-btn {
+    background: var(--panel-2);
     border: 1px solid var(--line);
     color: var(--text);
     padding: 4px 10px;
@@ -130,15 +210,13 @@
     font-weight: 700;
   }
   .ctrl-btn:hover { background: var(--kac-wine); border-color: var(--kac-wine); }
-
-  /* Main subtitle stage */
-  .stage {
-    height: calc(100vh - 48px);
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    padding: 24px 32px;
-    overflow: hidden;
+  .scale-display {
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    padding: 0 4px;
+    min-width: 40px;
+    text-align: center;
   }
 
   .lines {
@@ -149,7 +227,6 @@
     height: 100%;
     overflow: hidden;
   }
-
   .line {
     text-align: center;
     line-height: 1.35;
@@ -157,71 +234,217 @@
     transition: opacity 0.4s ease, transform 0.4s ease;
     padding: 4px 0;
   }
-
-  /* Current (newest) - gold, big */
   .line.current {
-    font-size: clamp(36px, 6vh, 84px);
+    font-size: clamp(32px, 5.5vh, 76px);
     font-weight: 800;
     color: var(--kac-gold);
-    text-shadow:
-      0 0 18px rgba(240, 200, 105, 0.5),
-      2px 2px 8px rgba(0,0,0,0.95);
+    text-shadow: 0 0 18px rgba(240,200,105,0.5), 2px 2px 8px rgba(0,0,0,0.95);
   }
-
-  /* Previous lines - white, smaller */
   .line.prev1 {
-    font-size: clamp(24px, 4vh, 56px);
+    font-size: clamp(22px, 3.6vh, 50px);
     font-weight: 600;
     color: #d0d4db;
     opacity: 0.6;
   }
   .line.prev2 {
-    font-size: clamp(20px, 3.2vh, 44px);
+    font-size: clamp(18px, 2.8vh, 40px);
     font-weight: 500;
     color: #7a808a;
     opacity: 0.35;
   }
-
   @keyframes lineSlideIn {
     from { opacity: 0; transform: translateY(-20px); }
     to { opacity: 1; transform: translateY(0); }
   }
   .line.entering { animation: lineSlideIn 0.4s ease; }
 
-  /* Empty state */
-  .empty {
+  .empty-state {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
     text-align: center;
     color: var(--text-dim);
+    padding: 20px;
   }
-  .empty-title {
-    font-size: 24px;
-    font-weight: 300;
-    letter-spacing: 2px;
-    color: var(--text);
-  }
-  .empty-sub {
-    font-size: 14px;
-    line-height: 1.6;
-    max-width: 480px;
-  }
-  .empty-icon {
-    font-size: 56px;
-    opacity: 0.3;
-    margin-bottom: 8px;
+  .empty-icon { font-size: 48px; opacity: 0.3; }
+  .empty-title { font-size: 22px; font-weight: 300; letter-spacing: 1.5px; color: var(--text); }
+  .empty-sub { font-size: 13px; line-height: 1.6; max-width: 480px; }
+
+  /* ============ Q&A VIEW ============ */
+  .qa-stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    overflow: hidden;
+    user-select: text;
+    -webkit-user-select: text;
   }
 
-  /* Subtle background scale adjuster */
-  .scale-display {
-    font-family: 'SF Mono', Menlo, monospace;
+  .qa-input-section {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+  }
+  .qa-input-section h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--kac-gold);
+    margin-bottom: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .qa-textarea {
+    width: 100%;
+    min-height: 70px;
+    max-height: 140px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+  }
+  .qa-textarea:focus { border-color: var(--kac-gold); }
+  .qa-textarea::placeholder { color: var(--text-dim); }
+
+  .qa-input-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    gap: 10px;
+  }
+  .qa-char-count {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .qa-send-btn {
+    background: var(--kac-wine);
+    border: none;
+    color: #fff;
+    padding: 8px 18px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .qa-send-btn:hover:not(:disabled) { background: var(--kac-wine-dark); }
+  .qa-send-btn:disabled {
+    background: var(--panel-2);
+    color: var(--text-dim);
+    cursor: not-allowed;
+  }
+
+  .qa-history {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .qa-history h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    font-weight: 700;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .qa-history-empty {
+    color: var(--text-dim);
+    font-size: 12px;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+  }
+
+  .qa-item {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--orange);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .qa-item.resolved {
+    border-left-color: var(--green);
+    opacity: 0.6;
+  }
+  .qa-item-status {
+    display: inline-block;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+  }
+  .qa-item-status.pending {
+    background: rgba(243, 156, 18, 0.15);
+    color: var(--orange);
+  }
+  .qa-item-status.resolved {
+    background: rgba(46, 204, 113, 0.15);
+    color: var(--green);
+  }
+  .qa-item-text {
+    color: var(--text);
+    word-wrap: break-word;
+  }
+  .qa-item-time {
     font-size: 10px;
     color: var(--text-dim);
-    padding: 0 4px;
+    margin-top: 4px;
+  }
+
+  .toast {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--panel);
+    border: 1px solid var(--kac-gold);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    max-width: 80%;
+  }
+  .toast.show { opacity: 1; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .brand-sub { display: none; }
+    .header { padding: 0 10px; }
+    .tab-btn { padding: 5px 9px; font-size: 9px; }
   }
 </style>
 </head>
@@ -233,15 +456,14 @@
     <div class="logo-mark">KAC</div>
     <div>
       <div class="brand-text">Live Subtitles</div>
-      <div class="brand-sub">Korea Airports Corporation · International Training</div>
+      <div class="brand-sub">Korea Airports Corporation</div>
     </div>
   </div>
 
   <div class="header-right">
-    <div class="controls">
-      <button class="ctrl-btn" id="btnSizeDown">A-</button>
-      <span class="scale-display" id="scaleDisplay">100%</span>
-      <button class="ctrl-btn" id="btnSizeUp">A+</button>
+    <div class="tabs">
+      <button class="tab-btn active" id="tabSubtitles">📺 Subtitles</button>
+      <button class="tab-btn" id="tabQA">💬 Q&amp;A</button>
     </div>
     <div class="status waiting" id="status">
       <span class="dot"></span>
@@ -250,22 +472,59 @@
   </div>
 </div>
 
-<!-- STAGE -->
-<div class="stage">
-  <div class="lines" id="lines">
-    <div class="empty" id="empty">
-      <div class="empty-icon">🎤</div>
-      <div class="empty-title">Waiting for lecturer...</div>
-      <div class="empty-sub">
-        Live English subtitles will appear here when the lecture starts.<br>
-        실시간 영어 자막이 강의 시작 시 표시됩니다.
+<!-- MAIN -->
+<div class="main">
+
+  <!-- SUBTITLE VIEW -->
+  <div class="view active" id="viewSubtitles">
+    <div class="subtitle-controls">
+      <button class="ctrl-btn" id="btnSizeDown">A-</button>
+      <span class="scale-display" id="scaleDisplay">100%</span>
+      <button class="ctrl-btn" id="btnSizeUp">A+</button>
+    </div>
+    <div class="subtitle-stage">
+      <div class="lines" id="lines">
+        <div class="empty-state" id="empty">
+          <div class="empty-icon">🎤</div>
+          <div class="empty-title">Waiting for lecturer...</div>
+          <div class="empty-sub">
+            Live English subtitles will appear here when the lecture starts.
+          </div>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- Q&A VIEW -->
+  <div class="view" id="viewQA">
+    <div class="qa-stage">
+      <div class="qa-input-section">
+        <h3>💬 Ask a Question (Anonymous)</h3>
+        <textarea
+          id="qaText"
+          class="qa-textarea"
+          placeholder="Type your question in English (max 500 characters)..."
+          maxlength="500"></textarea>
+        <div class="qa-input-row">
+          <span class="qa-char-count" id="charCount">0 / 500</span>
+          <button class="qa-send-btn" id="btnSendQuestion" disabled>Send Question</button>
+        </div>
+      </div>
+
+      <div class="qa-history">
+        <h3>📋 Your Questions</h3>
+        <div id="myQuestions">
+          <div class="qa-history-empty">No questions yet. Ask anything!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-  // Firebase config (same as lecturer's app)
   const firebaseConfig = {
     apiKey: "AIzaSyBlrQXAr-Md-OEDev40FrHydzaA4A4Fh2s",
     authDomain: "kac-lecture-subtitles.firebaseapp.com",
@@ -277,6 +536,22 @@
   };
 
   const SESSION_ID = 'live';
+  const $ = id => document.getElementById(id);
+
+  // Generate or recover anonymous client ID (stored in localStorage)
+  function getClientId() {
+    try {
+      let id = localStorage.getItem('kac_client_id');
+      if (!id) {
+        id = 'c_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now().toString(36);
+        localStorage.setItem('kac_client_id', id);
+      }
+      return id;
+    } catch(e) {
+      return 'c_' + Math.random().toString(36).slice(2, 10);
+    }
+  }
+  const CLIENT_ID = getClientId();
 
   let firebaseApp, db;
   try {
@@ -287,45 +562,68 @@
     setStatus('error', 'Connection error');
   }
 
-  const $ = id => document.getElementById(id);
-  let scale = 1.0;
-  let finalLinesHistory = []; // Last few final lines (newest first)
-  let interimText = '';
-
+  // ============================================================
+  // STATUS
+  // ============================================================
   function setStatus(state, text) {
     const status = $('status');
     const statusText = $('statusText');
     status.classList.remove('connected', 'waiting');
-    if (state === 'connected') {
-      status.classList.add('connected');
-    } else {
-      status.classList.add('waiting');
-    }
+    if (state === 'connected') status.classList.add('connected');
+    else status.classList.add('waiting');
     statusText.textContent = text || state;
   }
 
+  function toast(msg, ms=2200) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._tid);
+    t._tid = setTimeout(()=>t.classList.remove('show'), ms);
+  }
+
   // ============================================================
-  // SUBSCRIBE TO FIREBASE
+  // TAB SWITCHING
   // ============================================================
+  $('tabSubtitles').addEventListener('click', () => switchTab('subtitles'));
+  $('tabQA').addEventListener('click', () => switchTab('qa'));
+
+  function switchTab(tab) {
+    if (tab === 'subtitles') {
+      $('tabSubtitles').classList.add('active');
+      $('tabQA').classList.remove('active');
+      $('viewSubtitles').classList.add('active');
+      $('viewQA').classList.remove('active');
+    } else {
+      $('tabSubtitles').classList.remove('active');
+      $('tabQA').classList.add('active');
+      $('viewSubtitles').classList.remove('active');
+      $('viewQA').classList.add('active');
+      // Focus textarea for quick typing
+      setTimeout(()=>$('qaText').focus(), 100);
+    }
+  }
+
+  // ============================================================
+  // SUBTITLES (Firebase listen)
+  // ============================================================
+  let scale = 1.0;
+  let finalLinesHistory = [];
+  let interimText = '';
+
   if (db) {
     const baseRef = db.ref('subtitles/' + SESSION_ID);
 
-    // Connection status
     db.ref('.info/connected').on('value', snap => {
-      if (snap.val() === true) {
-        setStatus('connected', 'Connected');
-      } else {
-        setStatus('waiting', 'Reconnecting...');
-      }
+      if (snap.val() === true) setStatus('connected', 'Connected');
+      else setStatus('waiting', 'Reconnecting...');
     });
 
-    // Listen to current (interim or latest final)
     baseRef.child('current').on('value', snap => {
       const data = snap.val();
       if (!data) return;
 
       if (data.isFinal) {
-        // Push to history
         const text = data.text || '';
         if (text && (finalLinesHistory.length === 0 || finalLinesHistory[0] !== text)) {
           finalLinesHistory.unshift(text);
@@ -333,17 +631,14 @@
         }
         interimText = '';
       } else {
-        // Interim update
         interimText = data.text || '';
       }
       renderLines(data.isFinal);
     });
 
-    // Listen to history changes (in case we missed updates)
     baseRef.child('history').limitToLast(5).on('value', snap => {
       const entries = snap.val() || {};
       const sorted = Object.values(entries).sort((a,b) => b.timestamp - a.timestamp);
-      // Don't override if we have a fresher local copy from 'current'
       if (sorted.length > 0 && finalLinesHistory.length === 0) {
         finalLinesHistory = sorted.map(e => e.text);
         renderLines(true);
@@ -351,36 +646,20 @@
     });
   }
 
-  // ============================================================
-  // RENDER
-  // ============================================================
   function renderLines(animate) {
     const container = $('lines');
-    const empty = $('empty');
-
-    // Decide what's shown
     const hasContent = interimText || finalLinesHistory.length > 0;
 
     if (!hasContent) {
-      // Show empty state
-      if (!container.contains(empty)) {
-        container.innerHTML = '';
-        const e = document.createElement('div');
-        e.className = 'empty';
-        e.innerHTML = `
+      container.innerHTML = `
+        <div class="empty-state">
           <div class="empty-icon">🎤</div>
           <div class="empty-title">Waiting for lecturer...</div>
-          <div class="empty-sub">
-            Live English subtitles will appear here when the lecture starts.<br>
-            실시간 영어 자막이 강의 시작 시 표시됩니다.
-          </div>
-        `;
-        container.appendChild(e);
-      }
+          <div class="empty-sub">Live English subtitles will appear here when the lecture starts.</div>
+        </div>`;
       return;
     }
 
-    // Build slot list: current (top), prev1, prev2
     let current = null, prev1 = null, prev2 = null;
     if (interimText) {
       current = interimText;
@@ -392,13 +671,11 @@
       prev2 = finalLinesHistory[2] || null;
     }
 
-    // Dedupe (avoid showing identical consecutive lines)
     if (current && prev1 && current.trim().toLowerCase() === prev1.trim().toLowerCase()) {
       prev1 = prev2;
       prev2 = finalLinesHistory[3] || null;
     }
 
-    // Render
     container.innerHTML = '';
     if (current) {
       const el = document.createElement('div');
@@ -427,9 +704,6 @@
     }
   }
 
-  // ============================================================
-  // SIZE CONTROLS
-  // ============================================================
   $('btnSizeUp').addEventListener('click', () => {
     scale = Math.min(2.0, scale + 0.15);
     updateScale();
@@ -444,7 +718,121 @@
   }
 
   // ============================================================
-  // KEEP SCREEN ON (mobile/tablet)
+  // Q&A
+  // ============================================================
+  const qaText = $('qaText');
+  const charCount = $('charCount');
+  const btnSend = $('btnSendQuestion');
+
+  qaText.addEventListener('input', () => {
+    const len = qaText.value.length;
+    charCount.textContent = `${len} / 500`;
+    btnSend.disabled = len === 0 || qaText.value.trim().length === 0;
+  });
+
+  // Submit on Ctrl+Enter
+  qaText.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !btnSend.disabled) {
+      e.preventDefault();
+      sendQuestion();
+    }
+  });
+
+  btnSend.addEventListener('click', sendQuestion);
+
+  async function sendQuestion() {
+    if (!db) {
+      toast('Connection error. Please try again.', 3000);
+      return;
+    }
+    const text = qaText.value.trim();
+    if (!text) return;
+
+    btnSend.disabled = true;
+    btnSend.textContent = 'Sending...';
+
+    try {
+      const ref = db.ref('questions/' + SESSION_ID).push();
+      await ref.set({
+        text: text,
+        clientId: CLIENT_ID,
+        timestamp: Date.now(),
+        status: 'pending'  // 'pending' | 'seen' | 'resolved'
+      });
+
+      qaText.value = '';
+      charCount.textContent = '0 / 500';
+      toast('✓ Question sent to the lecturer');
+    } catch (e) {
+      console.warn('Send failed:', e);
+      toast('Failed to send. Please try again.', 3000);
+    } finally {
+      btnSend.disabled = false;
+      btnSend.textContent = 'Send Question';
+    }
+  }
+
+  // Listen to my questions (filter by clientId)
+  let myQuestionsCache = {};
+  if (db) {
+    db.ref('questions/' + SESSION_ID).on('value', snap => {
+      const all = snap.val() || {};
+      myQuestionsCache = {};
+      for (const [key, q] of Object.entries(all)) {
+        if (q.clientId === CLIENT_ID) {
+          myQuestionsCache[key] = q;
+        }
+      }
+      renderMyQuestions();
+    });
+  }
+
+  function renderMyQuestions() {
+    const container = $('myQuestions');
+    const list = Object.values(myQuestionsCache).sort((a,b) => b.timestamp - a.timestamp);
+
+    if (list.length === 0) {
+      container.innerHTML = '<div class="qa-history-empty">No questions yet. Ask anything!</div>';
+      // Update Q&A tab badge
+      $('tabQA').querySelector('.badge')?.classList.remove('show');
+      return;
+    }
+
+    container.innerHTML = '';
+    let pendingCount = 0;
+    for (const q of list) {
+      const isResolved = q.status === 'resolved';
+      if (!isResolved) pendingCount++;
+
+      const item = document.createElement('div');
+      item.className = 'qa-item' + (isResolved ? ' resolved' : '');
+      item.innerHTML = `
+        <span class="qa-item-status ${isResolved ? 'resolved' : 'pending'}">
+          ${isResolved ? '✓ Resolved' : '⏳ Waiting'}
+        </span>
+        <div class="qa-item-text">${escapeHtml(q.text)}</div>
+        <div class="qa-item-time">${formatTime(q.timestamp)}</div>
+      `;
+      container.appendChild(item);
+    }
+  }
+
+  function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function formatTime(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    return `${hh}:${mm}`;
+  }
+
+  // ============================================================
+  // KEEP SCREEN ON
   // ============================================================
   let wakeLock = null;
   async function requestWakeLock() {
@@ -452,21 +840,15 @@
       if ('wakeLock' in navigator) {
         wakeLock = await navigator.wakeLock.request('screen');
       }
-    } catch (e) {
-      console.log('Wake lock not available');
-    }
+    } catch (e) {}
   }
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && !wakeLock) {
-      requestWakeLock();
-    }
+    if (document.visibilityState === 'visible' && !wakeLock) requestWakeLock();
   });
-  // Request on first user interaction (browsers require this)
   document.addEventListener('click', () => {
     if (!wakeLock) requestWakeLock();
   }, { once: true });
 
-  // Initial render
   renderLines(false);
 </script>
 </body>
