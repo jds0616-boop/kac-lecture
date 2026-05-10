@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+<title>KAC Lecture - Live Subtitles</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+<style>
+  :root {
+    --kac-wine: #6E1F36;
+    --kac-wine-dark: #4A1525;
+    --kac-gold: #f0c869;
+    --bg: #0a0c10;
+    --panel: #161a21;
+    --line: #262b34;
+    --text: #ffffff;
+    --text-dim: #8b9098;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Helvetica Neue', 'Segoe UI', sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Header */
+  .header {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    background: linear-gradient(180deg, #1a1f28, #11151c);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 5px;
+    background: linear-gradient(135deg, var(--kac-wine), var(--kac-wine-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 12px;
+    color: #fff;
+  }
+  .brand-text {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text);
+  }
+  .brand-sub {
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+  }
+  .status.connected {
+    border-color: #2ecc71;
+    color: #2ecc71;
+  }
+  .status.connected .dot {
+    background: #2ecc71;
+    box-shadow: 0 0 8px #2ecc71;
+    animation: pulse 1.5s infinite;
+  }
+  .status.waiting {
+    color: var(--text-dim);
+  }
+  .status .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #555;
+    display: inline-block;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Controls (size adjust) */
+  .controls {
+    display: flex;
+    gap: 4px;
+  }
+  .ctrl-btn {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 4px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+  .ctrl-btn:hover { background: var(--kac-wine); border-color: var(--kac-wine); }
+
+  /* Main subtitle stage */
+  .stage {
+    height: calc(100vh - 48px);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 24px 32px;
+    overflow: hidden;
+  }
+
+  .lines {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .line {
+    text-align: center;
+    line-height: 1.35;
+    word-wrap: break-word;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    padding: 4px 0;
+  }
+
+  /* Current (newest) - gold, big */
+  .line.current {
+    font-size: clamp(36px, 6vh, 84px);
+    font-weight: 800;
+    color: var(--kac-gold);
+    text-shadow:
+      0 0 18px rgba(240, 200, 105, 0.5),
+      2px 2px 8px rgba(0,0,0,0.95);
+  }
+
+  /* Previous lines - white, smaller */
+  .line.prev1 {
+    font-size: clamp(24px, 4vh, 56px);
+    font-weight: 600;
+    color: #d0d4db;
+    opacity: 0.6;
+  }
+  .line.prev2 {
+    font-size: clamp(20px, 3.2vh, 44px);
+    font-weight: 500;
+    color: #7a808a;
+    opacity: 0.35;
+  }
+
+  @keyframes lineSlideIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .line.entering { animation: lineSlideIn 0.4s ease; }
+
+  /* Empty state */
+  .empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+    color: var(--text-dim);
+  }
+  .empty-title {
+    font-size: 24px;
+    font-weight: 300;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+  .empty-sub {
+    font-size: 14px;
+    line-height: 1.6;
+    max-width: 480px;
+  }
+  .empty-icon {
+    font-size: 56px;
+    opacity: 0.3;
+    margin-bottom: 8px;
+  }
+
+  /* Subtle background scale adjuster */
+  .scale-display {
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    padding: 0 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="brand">
+    <div class="logo-mark">KAC</div>
+    <div>
+      <div class="brand-text">Live Subtitles</div>
+      <div class="brand-sub">Korea Airports Corporation · International Training</div>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <div class="controls">
+      <button class="ctrl-btn" id="btnSizeDown">A-</button>
+      <span class="scale-display" id="scaleDisplay">100%</span>
+      <button class="ctrl-btn" id="btnSizeUp">A+</button>
+    </div>
+    <div class="status waiting" id="status">
+      <span class="dot"></span>
+      <span id="statusText">Waiting</span>
+    </div>
+  </div>
+</div>
+
+<!-- STAGE -->
+<div class="stage">
+  <div class="lines" id="lines">
+    <div class="empty" id="empty">
+      <div class="empty-icon">🎤</div>
+      <div class="empty-title">Waiting for lecturer...</div>
+      <div class="empty-sub">
+        Live English subtitles will appear here when the lecture starts.<br>
+        실시간 영어 자막이 강의 시작 시 표시됩니다.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Firebase config (same as lecturer's app)
+  const firebaseConfig = {
+    apiKey: "AIzaSyBlrQXAr-Md-OEDev40FrHydzaA4A4Fh2s",
+    authDomain: "kac-lecture-subtitles.firebaseapp.com",
+    databaseURL: "https://kac-lecture-subtitles-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "kac-lecture-subtitles",
+    storageBucket: "kac-lecture-subtitles.firebasestorage.app",
+    messagingSenderId: "908630631161",
+    appId: "1:908630631161:web:13f63da7f7582faccc7828"
+  };
+
+  const SESSION_ID = 'live';
+
+  let firebaseApp, db;
+  try {
+    firebaseApp = firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+  } catch (e) {
+    console.error('Firebase init failed:', e);
+    setStatus('error', 'Connection error');
+  }
+
+  const $ = id => document.getElementById(id);
+  let scale = 1.0;
+  let finalLinesHistory = []; // Last few final lines (newest first)
+  let interimText = '';
+
+  function setStatus(state, text) {
+    const status = $('status');
+    const statusText = $('statusText');
+    status.classList.remove('connected', 'waiting');
+    if (state === 'connected') {
+      status.classList.add('connected');
+    } else {
+      status.classList.add('waiting');
+    }
+    statusText.textContent = text || state;
+  }
+
+  // ============================================================
+  // SUBSCRIBE TO FIREBASE
+  // ============================================================
+  if (db) {
+    const baseRef = db.ref('subtitles/' + SESSION_ID);
+
+    // Connection status
+    db.ref('.info/connected').on('value', snap => {
+      if (snap.val() === true) {
+        setStatus('connected', 'Connected');
+      } else {
+        setStatus('waiting', 'Reconnecting...');
+      }
+    });
+
+    // Listen to current (interim or latest final)
+    baseRef.child('current').on('value', snap => {
+      const data = snap.val();
+      if (!data) return;
+
+      if (data.isFinal) {
+        // Push to history
+        const text = data.text || '';
+        if (text && (finalLinesHistory.length === 0 || finalLinesHistory[0] !== text)) {
+          finalLinesHistory.unshift(text);
+          if (finalLinesHistory.length > 5) finalLinesHistory.pop();
+        }
+        interimText = '';
+      } else {
+        // Interim update
+        interimText = data.text || '';
+      }
+      renderLines(data.isFinal);
+    });
+
+    // Listen to history changes (in case we missed updates)
+    baseRef.child('history').limitToLast(5).on('value', snap => {
+      const entries = snap.val() || {};
+      const sorted = Object.values(entries).sort((a,b) => b.timestamp - a.timestamp);
+      // Don't override if we have a fresher local copy from 'current'
+      if (sorted.length > 0 && finalLinesHistory.length === 0) {
+        finalLinesHistory = sorted.map(e => e.text);
+        renderLines(true);
+      }
+    });
+  }
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  function renderLines(animate) {
+    const container = $('lines');
+    const empty = $('empty');
+
+    // Decide what's shown
+    const hasContent = interimText || finalLinesHistory.length > 0;
+
+    if (!hasContent) {
+      // Show empty state
+      if (!container.contains(empty)) {
+        container.innerHTML = '';
+        const e = document.createElement('div');
+        e.className = 'empty';
+        e.innerHTML = `
+          <div class="empty-icon">🎤</div>
+          <div class="empty-title">Waiting for lecturer...</div>
+          <div class="empty-sub">
+            Live English subtitles will appear here when the lecture starts.<br>
+            실시간 영어 자막이 강의 시작 시 표시됩니다.
+          </div>
+        `;
+        container.appendChild(e);
+      }
+      return;
+    }
+
+    // Build slot list: current (top), prev1, prev2
+    let current = null, prev1 = null, prev2 = null;
+    if (interimText) {
+      current = interimText;
+      prev1 = finalLinesHistory[0] || null;
+      prev2 = finalLinesHistory[1] || null;
+    } else {
+      current = finalLinesHistory[0] || null;
+      prev1 = finalLinesHistory[1] || null;
+      prev2 = finalLinesHistory[2] || null;
+    }
+
+    // Dedupe (avoid showing identical consecutive lines)
+    if (current && prev1 && current.trim().toLowerCase() === prev1.trim().toLowerCase()) {
+      prev1 = prev2;
+      prev2 = finalLinesHistory[3] || null;
+    }
+
+    // Render
+    container.innerHTML = '';
+    if (current) {
+      const el = document.createElement('div');
+      el.className = 'line current';
+      if (animate && !interimText) el.classList.add('entering');
+      el.textContent = current;
+      el.style.transform = `scale(${scale})`;
+      el.style.transformOrigin = 'top center';
+      container.appendChild(el);
+    }
+    if (prev1) {
+      const el = document.createElement('div');
+      el.className = 'line prev1';
+      el.textContent = prev1;
+      el.style.transform = `scale(${scale})`;
+      el.style.transformOrigin = 'top center';
+      container.appendChild(el);
+    }
+    if (prev2) {
+      const el = document.createElement('div');
+      el.className = 'line prev2';
+      el.textContent = prev2;
+      el.style.transform = `scale(${scale})`;
+      el.style.transformOrigin = 'top center';
+      container.appendChild(el);
+    }
+  }
+
+  // ============================================================
+  // SIZE CONTROLS
+  // ============================================================
+  $('btnSizeUp').addEventListener('click', () => {
+    scale = Math.min(2.0, scale + 0.15);
+    updateScale();
+  });
+  $('btnSizeDown').addEventListener('click', () => {
+    scale = Math.max(0.6, scale - 0.15);
+    updateScale();
+  });
+  function updateScale() {
+    $('scaleDisplay').textContent = Math.round(scale * 100) + '%';
+    renderLines(false);
+  }
+
+  // ============================================================
+  // KEEP SCREEN ON (mobile/tablet)
+  // ============================================================
+  let wakeLock = null;
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+      }
+    } catch (e) {
+      console.log('Wake lock not available');
+    }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !wakeLock) {
+      requestWakeLock();
+    }
+  });
+  // Request on first user interaction (browsers require this)
+  document.addEventListener('click', () => {
+    if (!wakeLock) requestWakeLock();
+  }, { once: true });
+
+  // Initial render
+  renderLines(false);
+</script>
+</body>
+</html>
