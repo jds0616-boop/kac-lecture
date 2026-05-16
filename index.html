@@ -5,662 +5,469 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
 <title>KAC Lecture - Live</title>
 
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
-<!-- PDF.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 <style>
-  :root {
-    --kac-wine: #6E1F36;
-    --kac-wine-dark: #4A1525;
-    --kac-gold: #f0c869;
-    --bg: #0a0c10;
-    --panel: #161a21;
-    --panel-2: #1f242d;
-    --line: #262b34;
-    --text: #ffffff;
-    --text-dim: #8b9098;
-    --green: #2ecc71;
-    --orange: #f39c12;
-    --red: #ff4757;
-    --blue: #3498db;
-    --header-h: 64px;
-    --sub-h: 180px;
-  }
+:root{
+  --wine:#6E1F36; --wine-dk:#4A1525; --gold:#C9A96E;
+  --bg:#0e1014; --panel:#161a21; --panel2:#1f242d;
+  --text:#e8eaed; --dim:#8b9098; --line:#262b34;
+  --green:#2ecc71; --red:#ff4757; --orange:#f39c12;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;
+  font-family:'Helvetica Neue','Segoe UI',sans-serif;
+  background:var(--bg);color:var(--text);user-select:none;-webkit-user-select:none;}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+/* ── TOPBAR (강사 플랫폼과 동일한 높이·스타일) ── */
+.topbar{
+  height:50px;
+  display:flex;align-items:center;gap:6px;padding:0 10px;
+  background:linear-gradient(180deg,#1a1f28,#11151c);
+  border-bottom:1px solid var(--line);
+  box-shadow:0 2px 10px rgba(0,0,0,.5);
+  z-index:10;overflow:visible;flex-shrink:0;
+}
+.logo{
+  width:34px;height:34px;border-radius:5px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--wine),var(--wine-dk));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:12px;color:#fff;letter-spacing:.5px;
+}
+.brand{display:flex;flex-direction:column;line-height:1.15;margin-right:4px;flex-shrink:0;}
+.brand-t{font-size:11px;font-weight:700;white-space:nowrap;}
+.brand-s{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;}
 
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Helvetica Neue', 'Segoe UI', sans-serif;
-    overflow: hidden;
-    user-select: none;
-    -webkit-user-select: none;
-  }
+.btn{
+  background:transparent;border:1px solid transparent;color:var(--text);
+  padding:5px 9px;font-size:11px;font-weight:600;letter-spacing:.4px;
+  text-transform:uppercase;cursor:pointer;border-radius:4px;white-space:nowrap;
+  transition:background .15s,border-color .15s;flex-shrink:0;
+}
+.btn:hover{background:var(--panel2);border-color:var(--line);}
+.btn.primary{background:var(--wine);color:#fff;border-color:var(--wine);}
+.btn.primary:hover{background:var(--wine-dk);}
+.btn.active{background:var(--green);color:#fff;border-color:var(--green);}
 
-  /* ============ HEADER ============ */
-  .header {
-    height: var(--header-h);
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    padding: 0 18px;
-    background: linear-gradient(180deg, #1a1f28, #11151c);
-    border-bottom: 1px solid var(--line);
-    flex-shrink: 0;
-    gap: 12px;
-  }
-  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .logo-mark {
-    width: 40px; height: 40px;
-    border-radius: 6px;
-    background: linear-gradient(135deg, var(--kac-wine), var(--kac-wine-dark));
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 14px; color: #fff;
-    flex-shrink: 0;
-  }
-  .brand-text { font-size: 14px; font-weight: 700; letter-spacing: 0.4px; color: var(--text); }
-  .brand-sub {
-    font-size: 10px; color: var(--text-dim); letter-spacing: 1.1px;
-    text-transform: uppercase; white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis;
-  }
+/* topbar right (강사 플랫폼 topbar-right와 동일 패턴) */
+.topbar-right{
+  display:flex;align-items:center;gap:8px;
+  margin-left:auto;flex-shrink:0;
+}
 
-  /* Center: time + weather */
-  .header-center {
-    display: flex; align-items: center; justify-content: center;
-    gap: 16px; min-width: 0;
-  }
-  .clock {
-    display: inline-flex; flex-direction: column; align-items: center;
-    line-height: 1.2;
-    padding: 4px 14px;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    min-width: 130px;
-  }
-  .clock-time {
-    font-family: 'SF Mono', Menlo, monospace;
-    font-size: 18px; font-weight: 700;
-    color: var(--kac-gold); letter-spacing: 1px;
-  }
-  .clock-date { font-size: 10px; color: var(--text-dim); letter-spacing: 0.6px; margin-top: 1px; }
-  .clock-tz { font-size: 8px; color: var(--text-dim); letter-spacing: 1px; margin-top: 1px; text-transform: uppercase; }
+/* weather pill — topbar-right에 포함 */
+.weather-pill{
+  display:flex;align-items:center;gap:6px;
+  padding:4px 10px;border-radius:8px;
+  border:1px solid var(--line);background:var(--panel2);
+  font-size:10px;font-weight:700;letter-spacing:.4px;
+  white-space:nowrap;cursor:default;
+}
+.weather-pill .w-icon{font-size:16px;line-height:1;}
+.weather-pill .w-temp{
+  font-family:'SF Mono',Menlo,monospace;
+  font-size:13px;font-weight:700;color:var(--text);
+}
+.weather-pill .w-loc{
+  font-size:9px;color:var(--dim);
+  max-width:80px;overflow:hidden;text-overflow:ellipsis;
+}
 
-  .weather {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 6px 12px;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    min-width: 120px;
-  }
-  .weather-icon { font-size: 22px; line-height: 1; }
-  .weather-info { display: inline-flex; flex-direction: column; line-height: 1.2; }
-  .weather-temp {
-    font-size: 16px; font-weight: 700; color: var(--text);
-    font-family: 'SF Mono', Menlo, monospace;
-  }
-  .weather-desc {
-    font-size: 9px; color: var(--text-dim); letter-spacing: 0.5px;
-    text-transform: uppercase; white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis; max-width: 100px;
-  }
-  .weather.loading .weather-temp { color: var(--text-dim); font-size: 12px; }
+/* clock block — KST + UTC side by side */
+.clock-block{
+  display:flex;flex-direction:column;align-items:flex-end;gap:1px;
+  background:var(--panel2);
+  padding:4px 10px;border-radius:4px;border:1px solid var(--line);
+}
+.clock-kst{
+  font-family:'SF Mono',Menlo,monospace;
+  font-size:15px;font-weight:700;letter-spacing:1px;
+  color:var(--gold);line-height:1.1;
+}
+.clock-utc{
+  font-family:'SF Mono',Menlo,monospace;
+  font-size:9px;font-weight:600;letter-spacing:.8px;
+  color:var(--dim);line-height:1;
+}
 
-  /* HEADER RIGHT (Q&A + status) */
-  .header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-  .qa-toggle {
-    background: var(--panel);
-    border: 1.5px solid var(--line);
-    color: var(--text-dim);
-    padding: 9px 16px;
-    font-size: 13px;
-    cursor: pointer;
-    border-radius: 8px;
-    font-weight: 700;
-    letter-spacing: 0.4px;
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.15s;
-    min-height: 40px;
-  }
-  .qa-toggle:hover {
-    background: var(--panel-2); color: var(--text); border-color: #3a414e;
-  }
-  .qa-toggle.active {
-    background: var(--kac-wine); border-color: var(--kac-wine); color: #fff;
-    box-shadow: 0 0 0 1px rgba(240,200,105,0.25), 0 2px 10px rgba(110,31,54,0.45);
-  }
-  .qa-toggle .badge {
-    position: absolute; top: -5px; right: -5px;
-    background: var(--red); color: white;
-    font-size: 10px; font-weight: 800;
-    padding: 2px 6px; border-radius: 10px;
-    display: none; min-width: 18px; text-align: center;
-    border: 2px solid var(--bg);
-  }
-  .qa-toggle .badge.show { display: block; }
+/* connection status pill */
+.conn-pill{
+  display:flex;align-items:center;gap:5px;padding:4px 10px;
+  border-radius:10px;border:1px solid var(--line);
+  font-size:9px;text-transform:uppercase;font-weight:700;letter-spacing:1px;
+  color:var(--dim);background:var(--panel2);
+}
+.conn-pill.on{border-color:var(--green);color:var(--green);}
+.conn-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+.conn-pill.on .dot{animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 
-  .status {
-    display: flex; align-items: center; gap: 7px;
-    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
-    font-weight: 700; padding: 7px 12px;
-    border-radius: 14px; border: 1px solid var(--line);
-    white-space: nowrap;
-  }
-  .status.connected { border-color: var(--green); color: var(--green); }
-  .status.connected .dot {
-    background: var(--green);
-    box-shadow: 0 0 8px var(--green);
-    animation: pulse 1.5s infinite;
-  }
-  .status.waiting { color: var(--text-dim); }
-  .status .dot { width: 8px; height: 8px; border-radius: 50%; background: #555; display: inline-block; }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+/* Q&A badge on button */
+.qa-badge{
+  display:inline-block;background:var(--red);color:#fff;
+  font-size:9px;font-weight:800;
+  padding:1px 5px;border-radius:8px;
+  min-width:16px;text-align:center;
+  margin-left:4px;vertical-align:middle;
+  opacity:0;transition:opacity .15s;
+}
+.qa-badge.show{opacity:1;}
 
-  /* ============ MAIN ============ */
-  .main {
-    height: calc(100vh - var(--header-h));
-    display: flex; flex-direction: column;
-    overflow: hidden;
-    position: relative;
-  }
+/* ── STAGE ── */
+.stage{height:calc(100vh - 50px);display:flex;flex-direction:column;}
 
-  /* STUDY VIEW (default) */
-  #viewStudy {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+/* PDF area — flex:1 (takes all space) */
+.pdf-area{
+  flex:1;min-height:100px;
+  position:relative;background:#090b0f;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.pdf-wrap{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;padding:10px;cursor:pointer;
+}
+#pdfCanvas{
+  max-width:100%;max-height:100%;
+  box-shadow:0 8px 40px rgba(0,0,0,.7);
+  border-radius:2px;background:#fff;
+  pointer-events:none;
+}
+.pdf-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 10px;background:var(--panel);border-bottom:1px solid var(--line);
+  gap:8px;flex-wrap:wrap;flex-shrink:0;
+}
+.pdf-topbar-l,.pdf-topbar-r{display:flex;align-items:center;gap:6px;}
+.pdf-btn{
+  background:var(--panel2);border:1px solid var(--line);
+  color:var(--text);padding:5px 10px;border-radius:4px;
+  cursor:pointer;font-size:11px;font-weight:600;
+  display:inline-flex;align-items:center;gap:4px;text-decoration:none;
+  transition:all .15s;
+}
+.pdf-btn:hover{background:var(--wine);border-color:var(--wine);color:#fff;}
+.pdf-btn.drive{background:var(--gold);border-color:var(--gold);color:#000;font-weight:700;}
+.pdf-btn.drive:hover{background:#fff;border-color:#fff;}
+.pdf-page{
+  font-family:'SF Mono',Menlo,monospace;font-size:11px;
+  color:var(--dim);min-width:64px;text-align:center;
+}
 
-  .pdf-area {
-    flex: 1;
-    min-height: 100px;
-    background: #090b0f;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+/* PDF empty */
+.pdf-empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;text-align:center;color:var(--dim);padding:28px;
+  max-width:520px;margin:0 auto;
+}
+.pdf-empty-icon{font-size:52px;opacity:.35;}
+.pdf-empty-title{font-size:18px;font-weight:300;letter-spacing:1.2px;color:var(--text);}
+.pdf-empty-memo{
+  background:rgba(201,169,110,.07);border:1px dashed rgba(201,169,110,.35);
+  border-radius:8px;padding:13px 16px;font-size:12px;line-height:1.75;
+  color:var(--gold);text-align:left;width:100%;
+}
+.pdf-empty-memo b{color:#fff;}
+.key{
+  display:inline-block;padding:1px 7px;
+  background:var(--gold);color:#000;border-radius:3px;
+  font-weight:700;font-size:11px;margin:0 2px;
+}
 
-  .sub-area {
-    flex-shrink: 0;
-    height: var(--sub-h);
-    min-height: 120px;
-    max-height: 240px;
-    border-top: 2px solid var(--kac-wine);
-    background: var(--panel);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+/* ── SUBTITLE AREA (강사 플랫폼과 동일) ── */
+.sub-area{
+  flex-shrink:0;height:180px;min-height:120px;max-height:240px;
+  border-top:2px solid var(--wine);background:var(--panel);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.sub-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:5px 14px;border-bottom:1px solid var(--line);flex-shrink:0;
+  background:linear-gradient(180deg,#1a1f28,#13171e);
+}
+.sub-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.2px;color:var(--dim);
+  display:flex;align-items:center;gap:6px;
+}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--dim);}
+.live-dot.on{background:var(--green);animation:blink 1s infinite;}
+.sub-ctrl{display:flex;gap:4px;align-items:center;}
+.sub-btn{
+  background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  padding:3px 8px;font-size:10px;font-weight:700;border-radius:3px;cursor:pointer;
+}
+.sub-btn:hover{color:var(--text);border-color:var(--dim);}
 
-  /* PDF top bar */
-  .pdf-topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 12px;
-    background: var(--panel);
-    border-bottom: 1px solid var(--line);
-    gap: 10px; flex-wrap: wrap;
-  }
-  .pdf-topbar-left, .pdf-topbar-right { display: flex; align-items: center; gap: 8px; }
-  .pdf-btn {
-    background: var(--panel-2);
-    border: 1px solid var(--line);
-    color: var(--text);
-    padding: 7px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-flex; align-items: center; gap: 5px;
-    text-decoration: none;
-    transition: all 0.15s;
-  }
-  .pdf-btn:hover { background: var(--kac-wine); border-color: var(--kac-wine); color: #fff; }
-  .pdf-btn.drive {
-    background: var(--kac-gold); border-color: var(--kac-gold);
-    color: #000; font-weight: 700;
-  }
-  .pdf-btn.drive:hover { background: #fff; border-color: #fff; }
-  .pdf-page-info {
-    font-family: 'SF Mono', Menlo, monospace;
-    font-size: 12px; color: var(--text-dim);
-    min-width: 70px; text-align: center; padding: 0 4px;
-  }
+/* 자막 스테이지 — 강사 플랫폼과 동일한 중앙정렬 방식 */
+.sub-stage{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:10px 32px;overflow:hidden;
+}
+.sub-empty{color:var(--dim);text-align:center;font-size:13px;line-height:1.8;}
+.sub-lines{
+  width:100%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;height:100%;
+}
+/* 단일 줄, 최대 2줄, autoFitFont가 글자 크기 줄여서 맞춤 */
+.sub-line{
+  text-align:center;font-weight:700;letter-spacing:.3px;
+  width:100%;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  overflow:hidden;word-break:break-word;overflow-wrap:break-word;
+  white-space:normal;
+  font-size:var(--sub-size,36px);line-height:1.45;color:var(--gold);
+}
+.sub-line.interim{color:#7ecfff;font-style:italic;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.sub-line.new{animation:fadeIn .22s ease both;}
 
-  /* PDF wrap */
-  .pdf-wrap {
-    flex: 1;
-    display: flex; align-items: center; justify-content: center;
-    position: relative; overflow: hidden;
-    padding: 10px;
-    cursor: pointer;
-  }
-  #pdfCanvas {
-    max-width: 100%; max-height: 100%;
-    box-shadow: 0 8px 40px rgba(0,0,0,.7);
-    border-radius: 2px; background: #fff;
-    pointer-events: none;
-  }
+/* ── Q&A OVERLAY ── */
+#viewQA{
+  position:absolute;top:50px;left:0;right:0;bottom:0;
+  background:var(--bg);
+  display:none;flex-direction:column;
+  overflow:hidden;z-index:50;
+}
+#viewQA.active{display:flex;}
 
-  /* PDF empty state with memo */
-  .pdf-empty {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 18px; text-align: center;
-    color: var(--text-dim);
-    padding: 30px;
-    max-width: 560px; margin: 0 auto;
-  }
-  .pdf-empty-icon { font-size: 56px; opacity: 0.35; }
-  .pdf-empty-title { font-size: 20px; font-weight: 300; letter-spacing: 1.2px; color: var(--text); }
-  .pdf-empty-sub { font-size: 14px; line-height: 1.7; color: var(--text-dim); }
-  .pdf-empty-memo {
-    background: rgba(240,200,105,0.08);
-    border: 1px dashed rgba(240,200,105,0.4);
-    border-radius: 8px;
-    padding: 14px 18px;
-    margin-top: 4px;
-    font-size: 13px; line-height: 1.7;
-    color: var(--kac-gold);
-    text-align: left;
-  }
-  .pdf-empty-memo b { color: #fff; }
-  .pdf-empty-memo .key {
-    display: inline-block;
-    padding: 2px 8px;
-    background: var(--kac-gold); color: #000;
-    border-radius: 4px;
-    font-weight: 700; font-size: 12px;
-    margin: 0 2px;
-  }
-  .btn-primary-load {
-    background: var(--kac-wine);
-    color: #fff;
-    border: none;
-    padding: 12px 26px;
-    border-radius: 8px;
-    font-weight: 700; font-size: 14px;
-    cursor: pointer;
-    letter-spacing: 0.4px;
-    transition: background 0.15s;
-    margin-top: 8px;
-  }
-  .btn-primary-load:hover { background: var(--kac-wine-dark); }
+/* Q&A header bar (X 버튼 포함) */
+.qa-bar{
+  height:46px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;
+  background:linear-gradient(180deg,#1a1f28,#11151c);
+  border-bottom:1px solid var(--line);
+  flex-shrink:0;
+}
+.qa-bar-title{
+  font-size:12px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1px;color:var(--gold);
+  display:flex;align-items:center;gap:6px;
+}
+.qa-close-btn{
+  background:var(--panel2);border:1px solid var(--line);color:var(--text);
+  padding:5px 14px;font-size:12px;font-weight:700;
+  border-radius:6px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
+  transition:all .15s;letter-spacing:.4px;
+}
+.qa-close-btn:hover{background:var(--wine);border-color:var(--wine);}
 
-  /* Subtitle header */
-  .sub-hd {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 5px 14px;
-    border-bottom: 1px solid var(--line);
-    flex-shrink: 0;
-    background: linear-gradient(180deg,#1a1f28,#13171e);
-  }
-  .sub-lbl {
-    font-size: 10px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 1.2px;
-    color: var(--text-dim);
-    display: flex; align-items: center; gap: 6px;
-  }
-  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); }
-  .live-dot.on { background: var(--green); animation: blink 1s infinite; }
-  @keyframes blink { 50% { opacity: 0.3; } }
+.qa-stage{
+  flex:1;display:flex;flex-direction:column;
+  padding:14px;overflow:hidden;
+  user-select:text;-webkit-user-select:text;
+}
+.qa-input-section{
+  background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;padding:14px;margin-bottom:14px;flex-shrink:0;
+}
+.qa-input-section h3{
+  font-size:12px;text-transform:uppercase;letter-spacing:1.2px;
+  color:var(--gold);margin-bottom:10px;font-weight:700;
+  display:flex;align-items:center;gap:6px;
+}
+.qa-textarea{
+  width:100%;min-height:72px;max-height:140px;
+  background:var(--bg);border:1px solid var(--line);
+  color:var(--text);padding:10px 12px;
+  border-radius:6px;font-family:inherit;
+  font-size:14px;line-height:1.5;resize:vertical;outline:none;
+}
+.qa-textarea:focus{border-color:var(--gold);}
+.qa-textarea::placeholder{color:var(--dim);}
+.qa-input-row{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:8px;gap:8px;
+}
+.qa-char-count{font-size:11px;color:var(--dim);}
+.qa-send-btn{
+  background:var(--wine);border:none;color:#fff;
+  padding:8px 18px;font-size:12px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.8px;
+  border-radius:6px;cursor:pointer;transition:background .15s;
+}
+.qa-send-btn:hover:not(:disabled){background:var(--wine-dk);}
+.qa-send-btn:disabled{background:var(--panel2);color:var(--dim);cursor:not-allowed;}
+.qa-history{
+  flex:1;overflow-y:auto;background:var(--panel);
+  border:1px solid var(--line);border-radius:10px;padding:12px;
+}
+.qa-history h3{
+  font-size:12px;text-transform:uppercase;letter-spacing:1.2px;
+  color:var(--gold);margin-bottom:10px;font-weight:700;
+  display:flex;align-items:center;gap:6px;
+}
+.qa-item{
+  background:var(--bg);border:1px solid var(--line);
+  border-left:3px solid var(--orange);border-radius:6px;
+  padding:10px 12px;margin-bottom:7px;
+}
+.qa-item.resolved{border-left-color:var(--green);opacity:.65;}
+.qa-item-status{
+  display:inline-block;padding:2px 7px;border-radius:9px;
+  font-size:9px;font-weight:700;letter-spacing:.8px;
+  text-transform:uppercase;margin-bottom:5px;
+}
+.qa-item-status.pending{background:rgba(243,156,18,.15);color:var(--orange);}
+.qa-item-status.resolved{background:rgba(46,204,113,.15);color:var(--green);}
+.qa-item-text{font-size:13px;line-height:1.5;color:var(--text);word-wrap:break-word;}
+.qa-item-time{
+  font-size:9px;color:var(--dim);margin-top:5px;
+  font-family:'SF Mono',Menlo,monospace;
+}
+.qa-history-empty{text-align:center;padding:28px 14px;color:var(--dim);font-size:12px;}
 
-  .sub-ctrl { display: flex; gap: 5px; align-items: center; }
-  .sub-btn {
-    background: var(--panel-2);
-    border: 1px solid var(--line);
-    color: var(--text);
-    padding: 5px 10px;
-    font-size: 11px; font-weight: 700;
-    border-radius: 4px; cursor: pointer;
-  }
-  .sub-btn:hover { background: var(--kac-wine); border-color: var(--kac-wine); }
-  .scale-display {
-    font-family: 'SF Mono', Menlo, monospace;
-    font-size: 10px; color: var(--text-dim);
-    padding: 0 4px; min-width: 40px; text-align: center;
-  }
+/* TOAST */
+.toast{
+  position:fixed;bottom:22px;left:50%;
+  transform:translateX(-50%) translateY(100px);
+  background:var(--wine);color:#fff;
+  padding:10px 20px;border-radius:20px;
+  font-size:12px;font-weight:700;opacity:0;
+  transition:all .3s;pointer-events:none;z-index:1000;
+  box-shadow:0 6px 24px rgba(0,0,0,.5);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-  /* Subtitle stage */
-  .sub-stage {
-    flex: 1;
-    display: flex; align-items: center; justify-content: center;
-    padding: 8px 24px;
-    overflow: hidden;
-  }
-  .sub-empty {
-    color: var(--text-dim); text-align: center;
-    font-size: 13px; line-height: 1.7;
-  }
-  .sub-empty-icon { font-size: 32px; opacity: 0.4; margin-bottom: 6px; }
-  .sub-lines {
-    width: 100%;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 6px;
-  }
-  .sub-line {
-    text-align: center; font-weight: 700; letter-spacing: 0.3px;
-    width: 100%;
-    word-break: break-word; overflow-wrap: break-word; white-space: normal;
-    color: var(--kac-gold);
-    line-height: 1.4;
-  }
-  .sub-line.current {
-    font-size: var(--sub-size, 32px);
-    text-shadow: 0 0 18px rgba(240,200,105,0.4), 1px 1px 6px rgba(0,0,0,0.95);
-  }
-  .sub-line.prev {
-    font-size: calc(var(--sub-size, 32px) * 0.55);
-    color: #b0b6c0; opacity: 0.5; font-weight: 500;
-  }
-  @keyframes lineSlideIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .sub-line.entering { animation: lineSlideIn 0.35s ease; }
-
-  /* Q&A overlay */
-  #viewQA {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: var(--bg);
-    display: none;
-    flex-direction: column;
-    overflow: hidden;
-    z-index: 50;
-  }
-  #viewQA.active { display: flex; }
-  .qa-stage {
-    flex: 1;
-    display: flex; flex-direction: column;
-    padding: 18px;
-    overflow: hidden;
-    user-select: text; -webkit-user-select: text;
-  }
-  .qa-input-section {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 16px;
-    flex-shrink: 0;
-  }
-  .qa-input-section h3 {
-    font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px;
-    color: var(--kac-gold);
-    margin-bottom: 12px; font-weight: 700;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .qa-textarea {
-    width: 100%;
-    min-height: 80px; max-height: 160px;
-    background: var(--bg);
-    border: 1px solid var(--line);
-    color: var(--text);
-    padding: 12px 14px;
-    border-radius: 6px;
-    font-family: inherit;
-    font-size: 15px; line-height: 1.5;
-    resize: vertical; outline: none;
-  }
-  .qa-textarea:focus { border-color: var(--kac-gold); }
-  .qa-textarea::placeholder { color: var(--text-dim); }
-  .qa-input-row {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: 10px; gap: 10px;
-  }
-  .qa-char-count { font-size: 12px; color: var(--text-dim); }
-  .qa-send-btn {
-    background: var(--kac-wine);
-    border: none; color: #fff;
-    padding: 10px 22px;
-    font-size: 13px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.8px;
-    border-radius: 6px; cursor: pointer;
-    transition: background 0.15s;
-  }
-  .qa-send-btn:hover:not(:disabled) { background: var(--kac-wine-dark); }
-  .qa-send-btn:disabled { background: var(--panel-2); color: var(--text-dim); cursor: not-allowed; }
-  .qa-history {
-    flex: 1; overflow-y: auto;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 14px;
-  }
-  .qa-history h3 {
-    font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px;
-    color: var(--kac-gold);
-    margin-bottom: 12px; font-weight: 700;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .qa-item {
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-left: 3px solid var(--orange);
-    border-radius: 6px;
-    padding: 11px 13px;
-    margin-bottom: 8px;
-  }
-  .qa-item.resolved { border-left-color: var(--green); opacity: 0.65; }
-  .qa-item-status {
-    display: inline-block; padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
-    text-transform: uppercase; margin-bottom: 6px;
-  }
-  .qa-item-status.pending { background: rgba(243,156,18,0.15); color: var(--orange); }
-  .qa-item-status.resolved { background: rgba(46,204,113,0.15); color: var(--green); }
-  .qa-item-text { font-size: 14px; line-height: 1.5; color: var(--text); word-wrap: break-word; }
-  .qa-item-time { font-size: 10px; color: var(--text-dim); margin-top: 6px; font-family: 'SF Mono', Menlo, monospace; }
-  .qa-history-empty { text-align: center; padding: 30px 18px; color: var(--text-dim); font-size: 13px; }
-
-  /* TOAST */
-  .toast {
-    position: fixed; bottom: 24px; left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    background: var(--kac-wine); color: #fff;
-    padding: 11px 22px;
-    border-radius: 22px;
-    font-size: 13px; font-weight: 700;
-    opacity: 0; transition: all 0.3s;
-    pointer-events: none; z-index: 1000;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.5);
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-  /* RESPONSIVE */
-  @media (max-width: 1100px) {
-    .brand-sub { display: none; }
-    .weather-desc { max-width: 70px; }
-  }
-  @media (max-width: 900px) {
-    :root { --sub-h: 150px; }
-    .clock { min-width: 110px; padding: 4px 10px; }
-    .clock-time { font-size: 16px; }
-    .weather { padding: 5px 10px; min-width: 100px; }
-    .weather-icon { font-size: 19px; }
-    .weather-temp { font-size: 14px; }
-    .weather-desc { display: none; }
-  }
-  @media (max-width: 640px) {
-    :root { --header-h: 100px; --sub-h: 140px; }
-    .header {
-      grid-template-columns: 1fr auto;
-      grid-template-rows: auto auto;
-      padding: 6px 10px;
-      gap: 6px;
-    }
-    .brand { grid-column: 1; grid-row: 1; }
-    .header-right { grid-column: 2; grid-row: 1; }
-    .header-center {
-      grid-column: 1 / -1; grid-row: 2;
-      gap: 8px; justify-content: center;
-    }
-    .logo-mark { width: 32px; height: 32px; font-size: 12px; }
-    .brand-text { font-size: 12px; }
-    .clock { min-width: 0; padding: 3px 9px; }
-    .clock-time { font-size: 14px; }
-    .clock-date { font-size: 9px; }
-    .clock-tz { display: none; }
-    .weather { padding: 3px 8px; min-width: 0; }
-    .weather-icon { font-size: 17px; }
-    .weather-temp { font-size: 13px; }
-    .weather-desc { display: none; }
-    .qa-toggle { padding: 7px 11px; font-size: 12px; min-height: 36px; }
-    .status { padding: 5px 8px; font-size: 9px; }
-    #statusText { display: none; }
-    .pdf-topbar { padding: 6px 8px; gap: 6px; }
-    .pdf-btn { padding: 6px 10px; font-size: 11px; }
-    .pdf-page-info { font-size: 11px; min-width: 60px; }
-    .pdf-empty { padding: 18px; gap: 12px; }
-    .pdf-empty-icon { font-size: 44px; }
-    .pdf-empty-title { font-size: 16px; }
-    .pdf-empty-sub { font-size: 12px; }
-    .pdf-empty-memo { font-size: 12px; padding: 10px 14px; }
-    .sub-stage { padding: 6px 14px; }
-  }
-  @media (max-width: 380px) {
-    .clock-time { font-size: 13px; }
-    .weather-temp { font-size: 12px; }
-  }
+/* RESPONSIVE */
+@media(max-width:900px){
+  .brand-s{display:none;}
+  .weather-pill .w-loc{display:none;}
+}
+@media(max-width:640px){
+  .topbar{height:auto;flex-wrap:wrap;padding:6px 8px;gap:5px;}
+  .topbar-right{flex-wrap:wrap;gap:5px;}
+  .brand-t{font-size:10px;}
+  .clock-kst{font-size:13px;}
+  .clock-utc{font-size:8px;}
+  .sub-area{height:140px;}
+  .sub-stage{padding:8px 14px;}
+}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="header">
+<!-- TOPBAR (강사 플랫폼과 동일한 레이아웃) -->
+<div class="topbar">
+  <div class="logo">KAC</div>
   <div class="brand">
-    <div class="logo-mark">KAC</div>
-    <div>
-      <div class="brand-text">Live Lecture</div>
-      <div class="brand-sub">Korea Airports Corporation</div>
-    </div>
+    <div class="brand-t">Korea Airports Corporation</div>
+    <div class="brand-s">International Training</div>
   </div>
 
-  <div class="header-center">
-    <div class="clock">
-      <div class="clock-time" id="clockTime">--:--:--</div>
-      <div class="clock-date" id="clockDate">----</div>
-      <div class="clock-tz">KST · Seoul</div>
-    </div>
-    <div class="weather loading" id="weather">
-      <div class="weather-icon" id="weatherIcon">🌐</div>
-      <div class="weather-info">
-        <div class="weather-temp" id="weatherTemp">Loading...</div>
-        <div class="weather-desc" id="weatherDesc">Locating...</div>
+  <button class="btn primary" id="btnLoadPdf">📁 Open PDF</button>
+  <a class="btn" style="background:var(--gold);color:#000;border-color:var(--gold);font-weight:700;"
+     href="https://drive.google.com/drive/folders/13nxZrI44fOiO1vuLeQS4myQpx45X72yC"
+     target="_blank" rel="noopener">☁️ Drive</a>
+  <button class="btn" id="btnQA">
+    💬 Q&amp;A <span class="qa-badge" id="qaBadge">0</span>
+  </button>
+
+  <div class="topbar-right">
+    <!-- Weather pill -->
+    <div class="weather-pill" id="weatherPill">
+      <div class="w-icon" id="wIcon">🌐</div>
+      <div>
+        <div class="w-temp" id="wTemp">—</div>
+        <div class="w-loc" id="wLoc">Loading...</div>
       </div>
     </div>
-  </div>
 
-  <div class="header-right">
-    <button class="qa-toggle" id="btnQA" title="Open Q&amp;A">
-      <span>💬</span>
-      <span>Q&amp;A</span>
-      <span class="badge"></span>
-    </button>
-    <div class="status waiting" id="status">
-      <span class="dot"></span>
-      <span id="statusText">Waiting</span>
+    <!-- Clock: KST + UTC -->
+    <div class="clock-block">
+      <div class="clock-kst" id="clockKST">--:--:--<span style="font-size:9px;font-weight:400;letter-spacing:0;margin-left:4px;color:var(--dim);">KST</span></div>
+      <div class="clock-utc" id="clockUTC">UTC --:--</div>
+    </div>
+
+    <!-- Connection status -->
+    <div class="conn-pill" id="connPill">
+      <div class="dot"></div>
+      <span id="connText">Waiting</span>
     </div>
   </div>
 </div>
 
-<!-- MAIN -->
-<div class="main">
-  <div id="viewStudy">
+<!-- STAGE -->
+<div class="stage">
 
-    <!-- PDF Area (BIG, like lecturer platform) -->
-    <div class="pdf-area">
-      <div class="pdf-topbar">
-        <div class="pdf-topbar-left">
-          <button class="pdf-btn" id="btnLoadPdf">📁 Open PDF</button>
-          <a class="pdf-btn drive" href="https://drive.google.com/drive/folders/13nxZrI44fOiO1vuLeQS4myQpx45X72yC" target="_blank" rel="noopener">
-            ☁️ Google Drive
-          </a>
-        </div>
-        <div class="pdf-topbar-right" id="pdfNav" style="display:none;">
-          <button class="pdf-btn" id="btnPrevPage">◀ Prev</button>
-          <span class="pdf-page-info" id="pdfPageInfo">1 / 1</span>
-          <button class="pdf-btn" id="btnNextPage">Next ▶</button>
-        </div>
+  <!-- PDF area -->
+  <div class="pdf-area">
+    <div class="pdf-topbar">
+      <div class="pdf-topbar-l">
+        <button class="pdf-btn" id="btnPrev">◀ Prev</button>
+        <span class="pdf-page" id="pdfPage">—</span>
+        <button class="pdf-btn" id="btnNext">Next ▶</button>
       </div>
-
-      <div class="pdf-wrap" id="pdfWrap">
-        <div class="pdf-empty" id="pdfEmpty">
-          <div class="pdf-empty-icon">📖</div>
-          <div class="pdf-empty-title">No material loaded</div>
-          <div class="pdf-empty-sub">Open the lecture PDF to start studying.</div>
-
-          <div class="pdf-empty-memo">
-            📌 <b>How to get the materials:</b><br>
-            Tap the yellow <span class="key">☁️ Google Drive</span> button at the top to download the lecture PDF, then come back and open it with <span class="key">📁 Open PDF</span>.
-            <br><br>
-            <b>Navigation tips:</b><br>
-            · <span class="key">Left click</span> = next page · <span class="key">Right click</span> = previous page<br>
-            · <span class="key">←</span> / <span class="key">→</span> arrow keys also work<br>
-            · <span class="key">Space</span> = next · <span class="key">Backspace</span> = previous
-          </div>
-
-          <button class="btn-primary-load" id="btnLoadPdf2">📁 Open PDF File</button>
-        </div>
-        <canvas id="pdfCanvas" style="display:none;"></canvas>
+      <div class="pdf-topbar-r" style="font-size:10px;color:var(--dim);">
+        <span>Left-click → next &nbsp;|&nbsp; Right-click → prev &nbsp;|&nbsp; ← → keys</span>
       </div>
     </div>
 
-    <!-- Subtitle Area (FIXED 180px like lecturer platform) -->
-    <div class="sub-area">
-      <div class="sub-hd">
-        <div class="sub-lbl">
-          <span class="live-dot" id="liveDot"></span>
-          Live Subtitles
-        </div>
-        <div class="sub-ctrl">
-          <button class="sub-btn" id="btnSizeDown">A-</button>
-          <span class="scale-display" id="scaleDisplay">100%</span>
-          <button class="sub-btn" id="btnSizeUp">A+</button>
-        </div>
-      </div>
-      <div class="sub-stage" id="subStage">
-        <div class="sub-empty">
-          <div class="sub-empty-icon">🎤</div>
-          <div>Waiting for lecturer...<br>Live subtitles will appear here.</div>
+    <div class="pdf-wrap" id="pdfWrap">
+      <div class="pdf-empty" id="pdfEmpty">
+        <div class="pdf-empty-icon">📖</div>
+        <div class="pdf-empty-title">No material loaded</div>
+        <div class="pdf-empty-memo">
+          📌 <b>How to get materials:</b><br>
+          Click the yellow <span class="key">☁️ Drive</span> button at the top → download the PDF → open it with <span class="key">📁 Open PDF</span>.
+          <br><br>
+          <b>Navigation:</b>&nbsp;
+          <span class="key">Left click</span> = next page &nbsp;
+          <span class="key">Right click</span> = prev page &nbsp;
+          <span class="key">← →</span> keys also work
         </div>
       </div>
+      <canvas id="pdfCanvas" style="display:none;"></canvas>
     </div>
   </div>
 
-  <!-- Q&A overlay -->
+  <!-- Subtitle area (강사 플랫폼과 동일) -->
+  <div class="sub-area">
+    <div class="sub-hd">
+      <div class="sub-lbl">
+        <div class="live-dot" id="liveDot"></div>
+        <span>Live Subtitles</span>
+      </div>
+      <div class="sub-ctrl">
+        <button class="sub-btn" id="btnBig">A+</button>
+        <button class="sub-btn" id="btnSmall">A−</button>
+      </div>
+    </div>
+    <div class="sub-stage">
+      <div class="sub-empty" id="subEmpty">🎤 Waiting for lecturer... live subtitles will appear here.</div>
+      <div class="sub-lines" id="subLines" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- Q&A overlay (절대 위치, stage 위에 덮음) -->
   <div id="viewQA">
+    <!-- Q&A 전용 헤더 (← 닫기 버튼 크게 표시) -->
+    <div class="qa-bar">
+      <div class="qa-bar-title">💬 Q&amp;A — Ask a Question</div>
+      <button class="qa-close-btn" id="btnQAClose">
+        ✕ &nbsp;Back to Lecture
+      </button>
+    </div>
+
     <div class="qa-stage">
       <div class="qa-input-section">
-        <h3>💬 Ask a Question (Anonymous)</h3>
+        <h3>📝 Send a question (Anonymous)</h3>
         <textarea
           id="qaText"
           class="qa-textarea"
-          placeholder="Type your question in English (max 500 characters)..."
+          placeholder="Type your question in English (max 500 characters)…"
           maxlength="500"></textarea>
         <div class="qa-input-row">
           <span class="qa-char-count" id="charCount">0 / 500</span>
-          <button class="qa-send-btn" id="btnSendQuestion" disabled>Send Question</button>
+          <button class="qa-send-btn" id="btnSend" disabled>Send</button>
         </div>
       </div>
       <div class="qa-history">
-        <h3>📋 Your Questions</h3>
-        <div id="myQuestions">
+        <h3>📋 My Questions</h3>
+        <div id="myQs">
           <div class="qa-history-empty">No questions yet. Ask anything!</div>
         </div>
       </div>
@@ -672,536 +479,420 @@
 <input type="file" id="fileInput" accept="application/pdf" style="display:none;">
 
 <script>
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBlrQXAr-Md-OEDev40FrHydzaA4A4Fh2s",
-    authDomain: "kac-lecture-subtitles.firebaseapp.com",
-    databaseURL: "https://kac-lecture-subtitles-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "kac-lecture-subtitles",
-    storageBucket: "kac-lecture-subtitles.firebasestorage.app",
-    messagingSenderId: "908630631161",
-    appId: "1:908630631161:web:13f63da7f7582faccc7828"
-  };
+const firebaseConfig = {
+  apiKey:"AIzaSyBlrQXAr-Md-OEDev40FrHydzaA4A4Fh2s",
+  authDomain:"kac-lecture-subtitles.firebaseapp.com",
+  databaseURL:"https://kac-lecture-subtitles-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"kac-lecture-subtitles",
+  storageBucket:"kac-lecture-subtitles.firebasestorage.app",
+  messagingSenderId:"908630631161",
+  appId:"1:908630631161:web:13f63da7f7582faccc7828"
+};
+const SESSION_ID='live';
+const $=id=>document.getElementById(id);
 
-  const SESSION_ID = 'live';
-  const $ = id => document.getElementById(id);
-
-  function getClientId() {
-    try {
-      let id = localStorage.getItem('kac_client_id');
-      if (!id) {
-        id = 'c_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now().toString(36);
-        localStorage.setItem('kac_client_id', id);
-      }
-      return id;
-    } catch(e) {
-      return 'c_' + Math.random().toString(36).slice(2, 10);
+function getClientId(){
+  try{
+    let id=localStorage.getItem('kac_client_id');
+    if(!id){
+      id='c_'+Math.random().toString(36).slice(2,10)+'_'+Date.now().toString(36);
+      localStorage.setItem('kac_client_id',id);
     }
+    return id;
+  }catch(e){return 'c_'+Math.random().toString(36).slice(2,10);}
+}
+const CLIENT_ID=getClientId();
+
+let db=null;
+try{
+  firebase.initializeApp(firebaseConfig);
+  db=firebase.database();
+}catch(e){console.error('Firebase init failed:',e);}
+
+function toast(msg,ms=2200){
+  const t=$('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),ms);
+}
+
+// ── CLOCK: KST + UTC, 1초 갱신 ───────────────────────────────────
+function updateClock(){
+  const now=new Date();
+  // KST (Asia/Seoul)
+  const kst=new Intl.DateTimeFormat('en-GB',{
+    timeZone:'Asia/Seoul',
+    hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false
+  }).format(now);
+  // UTC
+  const utc=new Intl.DateTimeFormat('en-GB',{
+    timeZone:'UTC',
+    hour:'2-digit',minute:'2-digit',hour12:false
+  }).format(now);
+
+  // clockKST: inner HTML로 KST 라벨 포함
+  $('clockKST').innerHTML=
+    kst+'<span style="font-size:9px;font-weight:400;letter-spacing:0;margin-left:4px;color:var(--dim);">KST</span>';
+  $('clockUTC').textContent='UTC '+utc;
+}
+updateClock();
+setInterval(updateClock,1000);
+
+// ── WEATHER: 현재 위치 기반 Open-Meteo (무료, API키 불필요) ──────
+const WMO={
+  0:['☀️','Clear'],1:['🌤️','Mostly clear'],2:['⛅','Partly cloudy'],
+  3:['☁️','Overcast'],45:['🌫️','Fog'],48:['🌫️','Rime fog'],
+  51:['🌦️','Lt drizzle'],53:['🌦️','Drizzle'],55:['🌧️','Drizzle'],
+  61:['🌧️','Lt rain'],63:['🌧️','Rain'],65:['🌧️','Heavy rain'],
+  71:['🌨️','Lt snow'],73:['🌨️','Snow'],75:['❄️','Heavy snow'],
+  80:['🌦️','Showers'],81:['🌧️','Showers'],82:['⛈️','Showers'],
+  95:['⛈️','Storm'],96:['⛈️','Storm+hail'],99:['⛈️','Storm+hail']
+};
+
+async function fetchWeather(lat,lon,locName){
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=auto`;
+    const res=await fetch(url);
+    if(!res.ok) throw new Error('API error');
+    const data=await res.json();
+    const t=data.current?.temperature_2m;
+    const code=data.current?.weather_code;
+    if(t==null) throw new Error('no data');
+    const[icon,label]=WMO[code]||['🌐','Unknown'];
+    $('wIcon').textContent=icon;
+    $('wTemp').textContent=Math.round(t)+'°C';
+    $('wLoc').textContent=locName||label;
+  }catch(e){
+    console.warn('Weather failed:',e);
+    $('wIcon').textContent='🌐';
+    $('wTemp').textContent='—';
+    $('wLoc').textContent='N/A';
   }
-  const CLIENT_ID = getClientId();
+}
 
-  let firebaseApp, db;
-  try {
-    firebaseApp = firebase.initializeApp(firebaseConfig);
-    db = firebase.database();
-  } catch (e) {
-    console.error('Firebase init failed:', e);
-    setStatus('error', 'Connection error');
-  }
-
-  function setStatus(state, text) {
-    const status = $('status');
-    const statusText = $('statusText');
-    status.classList.remove('connected', 'waiting');
-    if (state === 'connected') {
-      status.classList.add('connected');
-      $('liveDot').classList.add('on');
-    } else {
-      status.classList.add('waiting');
-      $('liveDot').classList.remove('on');
-    }
-    statusText.textContent = text || state;
-  }
-
-  function toast(msg, ms=2200) {
-    const t = $('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(t._tid);
-    t._tid = setTimeout(()=>t.classList.remove('show'), ms);
-  }
-
-  // ============================================================
-  // CLOCK — KST (Asia/Seoul)
-  // ============================================================
-  function updateClock() {
-    const now = new Date();
-    const kst = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Asia/Seoul',
-      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-    }).format(now);
-    const kstDate = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Seoul',
-      year: 'numeric', month: 'short', day: '2-digit', weekday: 'short'
-    }).format(now);
-    $('clockTime').textContent = kst;
-    $('clockDate').textContent = kstDate;
-  }
-  updateClock();
-  setInterval(updateClock, 1000);
-
-  // ============================================================
-  // WEATHER — geolocation + Open-Meteo (no API key needed)
-  // ============================================================
-  const WMO = {
-    0:  ['☀️','Clear'],
-    1:  ['🌤️','Mostly clear'],
-    2:  ['⛅','Partly cloudy'],
-    3:  ['☁️','Overcast'],
-    45: ['🌫️','Foggy'],
-    48: ['🌫️','Rime fog'],
-    51: ['🌦️','Light drizzle'],
-    53: ['🌦️','Drizzle'],
-    55: ['🌧️','Dense drizzle'],
-    56: ['🌨️','Freezing drizzle'],
-    57: ['🌨️','Freezing drizzle'],
-    61: ['🌧️','Light rain'],
-    63: ['🌧️','Rain'],
-    65: ['🌧️','Heavy rain'],
-    66: ['🌨️','Freezing rain'],
-    67: ['🌨️','Freezing rain'],
-    71: ['🌨️','Light snow'],
-    73: ['🌨️','Snow'],
-    75: ['❄️','Heavy snow'],
-    77: ['❄️','Snow grains'],
-    80: ['🌦️','Light showers'],
-    81: ['🌧️','Showers'],
-    82: ['⛈️','Violent showers'],
-    85: ['🌨️','Snow showers'],
-    86: ['🌨️','Snow showers'],
-    95: ['⛈️','Thunderstorm'],
-    96: ['⛈️','Thunderstorm w/ hail'],
-    99: ['⛈️','Thunderstorm w/ hail']
-  };
-
-  async function fetchWeather(lat, lon) {
-    try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=auto`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Weather API error');
-      const data = await res.json();
-      const t = data.current?.temperature_2m;
-      const code = data.current?.weather_code;
-      if (t == null) throw new Error('No data');
-
-      const [icon, label] = WMO[code] || ['🌐','Unknown'];
-      $('weather').classList.remove('loading');
-      $('weatherIcon').textContent = icon;
-      $('weatherTemp').textContent = Math.round(t) + '°C';
-      $('weatherDesc').textContent = label;
-    } catch (e) {
-      console.warn('Weather fetch failed:', e);
-      $('weatherIcon').textContent = '🌐';
-      $('weatherTemp').textContent = '—';
-      $('weatherDesc').textContent = 'Unavailable';
-    }
-  }
-
-  function initWeather() {
-    if (!navigator.geolocation) {
-      fetchWeather(37.5665, 126.9780);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      pos => fetchWeather(pos.coords.latitude, pos.coords.longitude),
-      err => {
-        console.warn('Geolocation denied:', err);
-        fetchWeather(37.5665, 126.9780);
-      },
-      { timeout: 6000, maximumAge: 600000 }
+// 위치 → 도시명 얻기 (reverse geocoding, Open-Meteo geocoding 없음 → nominatim 사용)
+async function reverseGeocode(lat,lon){
+  try{
+    const res=await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en`,
+      {headers:{'User-Agent':'KAC-Lecture-App/1.0'}}
     );
-  }
-  setTimeout(initWeather, 500);
-  setInterval(initWeather, 15 * 60 * 1000);
+    if(!res.ok) return null;
+    const data=await res.json();
+    // 도시 > 군/구 > 읍/면 > 도 순으로 사용
+    const addr=data.address||{};
+    return addr.city||addr.county||addr.town||addr.village||addr.state||null;
+  }catch(e){return null;}
+}
 
-  // ============================================================
-  // Q&A overlay toggle
-  // ============================================================
-  $('btnQA').addEventListener('click', () => {
-    const view = $('viewQA');
-    const isActive = view.classList.toggle('active');
-    $('btnQA').classList.toggle('active', isActive);
-    if (isActive) {
-      setTimeout(()=>$('qaText').focus(), 100);
+function initWeather(){
+  if(!navigator.geolocation){
+    fetchWeather(37.5665,126.9780,'Seoul');
+    return;
+  }
+  $('wLoc').textContent='Locating…';
+  navigator.geolocation.getCurrentPosition(
+    async pos=>{
+      const{latitude:lat,longitude:lon}=pos.coords;
+      // 도시명을 먼저 구한 뒤 날씨 요청
+      const city=await reverseGeocode(lat,lon);
+      fetchWeather(lat,lon,city||'Local');
+    },
+    err=>{
+      console.warn('Geolocation denied:',err);
+      // 위치 거부 시 Seoul fallback
+      fetchWeather(37.5665,126.9780,'Seoul (default)');
+    },
+    {timeout:8000,maximumAge:600000}
+  );
+}
+setTimeout(initWeather,600);
+setInterval(initWeather,15*60*1000);
+
+// ── CONNECTION STATUS ────────────────────────────────────────────
+function setConn(on,label){
+  const p=$('connPill');
+  p.classList.toggle('on',on);
+  $('connText').textContent=label;
+  $('liveDot').classList.toggle('on',on);
+}
+
+if(db){
+  db.ref('.info/connected').on('value',snap=>{
+    if(snap.val())setConn(true,'Connected');
+    else setConn(false,'Reconnecting…');
+  });
+}
+
+// ── SUBTITLES (강사 플랫폼과 동일한 autoFitFont 방식) ────────────
+let lastFinal='', interimTxt='', _subEl=null;
+let subFontSize=parseInt(localStorage.getItem('kac_sub_size')||'36');
+
+function applySubSize(){
+  document.documentElement.style.setProperty('--sub-size',subFontSize+'px');
+  localStorage.setItem('kac_sub_size',subFontSize);
+  renderSubs();
+}
+applySubSize();
+
+$('btnBig').onclick=()=>{subFontSize=Math.min(64,subFontSize+3);applySubSize();};
+$('btnSmall').onclick=()=>{subFontSize=Math.max(16,subFontSize-3);applySubSize();};
+
+function renderSubs(animate=false){
+  const sl=$('subLines'), se=$('subEmpty');
+  const text=interimTxt||lastFinal;
+  if(!text){sl.style.display='none';se.style.display='';_subEl=null;return;}
+  sl.style.display='';se.style.display='none';
+
+  const isInterim=!!interimTxt;
+  const wantClass='sub-line'+(isInterim?' interim':'')+(animate?' new':'');
+
+  // 같은 텍스트면 클래스만 갱신
+  if(_subEl&&_subEl.textContent===text){_subEl.className=wantClass;return;}
+
+  const el=document.createElement('div');
+  el.className=wantClass;
+  el.textContent=text;
+  sl.innerHTML='';
+  sl.appendChild(el);
+  _subEl=el;
+
+  // 강사 플랫폼과 동일: 글자가 넘치면 폰트 축소
+  autoFitFont(el,sl);
+}
+
+function autoFitFont(el,container){
+  el.style.fontSize='';
+  let fs=subFontSize;
+  el.style.fontSize=fs+'px';
+
+  const lineH=fs*1.45;
+  const maxLines=2;
+  const maxH=Math.min(container.clientHeight||130,lineH*maxLines+8);
+
+  let tries=0;
+  while(el.scrollHeight>maxH&&fs>14&&tries<30){
+    fs-=1;
+    el.style.fontSize=fs+'px';
+    tries++;
+  }
+}
+
+if(db){
+  const baseRef=db.ref('subtitles/'+SESSION_ID);
+
+  baseRef.child('current').on('value',snap=>{
+    const data=snap.val();
+    if(!data)return;
+    if(data.isFinal){
+      const t=data.text||'';
+      if(t){lastFinal=t;}
+      interimTxt='';
+      renderSubs(true);
+    }else{
+      interimTxt=data.text||'';
+      renderSubs(false);
     }
   });
 
-  // ============================================================
-  // SUBTITLES (Firebase listen)
-  // ============================================================
-  let scale = 1.0;
-  let finalLinesHistory = [];
-  let interimText = '';
+  // 입장 시 최근 자막 1개 복원
+  baseRef.child('history').limitToLast(1).once('value',snap=>{
+    const entries=snap.val()||{};
+    const sorted=Object.values(entries).sort((a,b)=>b.timestamp-a.timestamp);
+    if(sorted.length>0&&!lastFinal){lastFinal=sorted[0].text;renderSubs(false);}
+  });
+}
 
-  if (db) {
-    const baseRef = db.ref('subtitles/' + SESSION_ID);
+// 창 크기 바뀌면 자막 재맞춤
+window.addEventListener('resize',()=>{
+  if(_subEl){const sl=$('subLines');autoFitFont(_subEl,sl);}
+  if(pdfDoc)setTimeout(()=>renderPage(curPage),120);
+});
 
-    db.ref('.info/connected').on('value', snap => {
-      if (snap.val() === true) setStatus('connected', 'Connected');
-      else setStatus('waiting', 'Reconnecting...');
+// ── Q&A toggle — 열기 / 닫기 ─────────────────────────────────────
+function openQA(){
+  $('viewQA').classList.add('active');
+  $('btnQA').classList.add('active');
+  setTimeout(()=>$('qaText').focus(),100);
+}
+function closeQA(){
+  $('viewQA').classList.remove('active');
+  $('btnQA').classList.remove('active');
+}
+
+$('btnQA').addEventListener('click',()=>{
+  $('viewQA').classList.contains('active')?closeQA():openQA();
+});
+$('btnQAClose').addEventListener('click',closeQA);
+
+// ESC 키로도 닫힘
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&$('viewQA').classList.contains('active')){
+    e.preventDefault();closeQA();
+  }
+});
+
+// ── Q&A 기능 ─────────────────────────────────────────────────────
+const qaText=$('qaText'), charCount=$('charCount'), btnSend=$('btnSend');
+
+qaText.addEventListener('input',()=>{
+  const len=qaText.value.length;
+  charCount.textContent=`${len} / 500`;
+  btnSend.disabled=qaText.value.trim().length===0;
+});
+qaText.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'&&!btnSend.disabled){
+    e.preventDefault();sendQuestion();
+  }
+});
+btnSend.addEventListener('click',sendQuestion);
+
+async function sendQuestion(){
+  if(!db){toast('Connection error.',3000);return;}
+  const text=qaText.value.trim();
+  if(!text)return;
+  btnSend.disabled=true;
+  btnSend.textContent='Sending…';
+  try{
+    await db.ref('questions/'+SESSION_ID).push({
+      text,clientId:CLIENT_ID,timestamp:Date.now(),status:'pending'
     });
-
-    baseRef.child('current').on('value', snap => {
-      const data = snap.val();
-      if (!data) return;
-
-      if (data.isFinal) {
-        const text = data.text || '';
-        if (text && (finalLinesHistory.length === 0 || finalLinesHistory[0] !== text)) {
-          finalLinesHistory.unshift(text);
-          if (finalLinesHistory.length > 5) finalLinesHistory.pop();
-        }
-        interimText = '';
-      } else {
-        interimText = data.text || '';
-      }
-      renderLines(data.isFinal);
-    });
-
-    baseRef.child('history').limitToLast(5).on('value', snap => {
-      const entries = snap.val() || {};
-      const sorted = Object.values(entries).sort((a,b) => b.timestamp - a.timestamp);
-      if (sorted.length > 0 && finalLinesHistory.length === 0) {
-        finalLinesHistory = sorted.map(e => e.text);
-        renderLines(true);
-      }
-    });
+    qaText.value='';charCount.textContent='0 / 500';
+    toast('✓ Question sent to the lecturer');
+  }catch(e){
+    console.warn('Send failed:',e);
+    toast('Failed to send. Try again.',3000);
+  }finally{
+    btnSend.disabled=false;btnSend.textContent='Send';
   }
+}
 
-  function computeSubSize() {
-    const area = document.querySelector('.sub-area');
-    if (!area) return 32;
-    const h = area.clientHeight;
-    let base = Math.max(20, Math.min(46, h * 0.30));
-    return Math.round(base * scale);
-  }
-
-  function renderLines(animate) {
-    const stage = $('subStage');
-    const hasContent = interimText || finalLinesHistory.length > 0;
-
-    if (!hasContent) {
-      stage.innerHTML = `
-        <div class="sub-empty">
-          <div class="sub-empty-icon">🎤</div>
-          <div>Waiting for lecturer...<br>Live subtitles will appear here.</div>
-        </div>`;
-      return;
+let myQsCache={};
+if(db){
+  db.ref('questions/'+SESSION_ID).on('value',snap=>{
+    const all=snap.val()||{};
+    myQsCache={};
+    for(const[k,q]of Object.entries(all)){
+      if(q.clientId===CLIENT_ID)myQsCache[k]=q;
     }
-
-    let current = null, prev1 = null;
-    if (interimText) {
-      current = interimText;
-      prev1 = finalLinesHistory[0] || null;
-    } else {
-      current = finalLinesHistory[0] || null;
-      prev1 = finalLinesHistory[1] || null;
-    }
-
-    if (current && prev1 && current.trim().toLowerCase() === prev1.trim().toLowerCase()) {
-      prev1 = finalLinesHistory[2] || null;
-    }
-
-    const size = computeSubSize();
-    stage.innerHTML = '';
-    const lines = document.createElement('div');
-    lines.className = 'sub-lines';
-    lines.style.setProperty('--sub-size', size + 'px');
-
-    if (current) {
-      const el = document.createElement('div');
-      el.className = 'sub-line current';
-      if (animate && !interimText) el.classList.add('entering');
-      el.textContent = current;
-      lines.appendChild(el);
-    }
-    if (prev1) {
-      const el = document.createElement('div');
-      el.className = 'sub-line prev';
-      el.textContent = prev1;
-      lines.appendChild(el);
-    }
-    stage.appendChild(lines);
-  }
-
-  $('btnSizeUp').addEventListener('click', () => {
-    scale = Math.min(2.0, scale + 0.15);
-    $('scaleDisplay').textContent = Math.round(scale * 100) + '%';
-    renderLines(false);
+    renderMyQs();
   });
-  $('btnSizeDown').addEventListener('click', () => {
-    scale = Math.max(0.6, scale - 0.15);
-    $('scaleDisplay').textContent = Math.round(scale * 100) + '%';
-    renderLines(false);
-  });
+}
 
-  // ============================================================
-  // PDF VIEWER
-  // ============================================================
-  let pdfDoc = null, curPage = 1, totPages = 0, rendering = false, queued = null;
-  const canvas = $('pdfCanvas');
-  const ctx = canvas.getContext('2d');
-
-  $('btnLoadPdf').onclick = () => $('fileInput').click();
-  $('btnLoadPdf2').onclick = () => $('fileInput').click();
-
-  $('fileInput').onchange = async e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    try {
-      const buf = await file.arrayBuffer();
-      pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
-      totPages = pdfDoc.numPages;
-      curPage = 1;
-      $('pdfEmpty').style.display = 'none';
-      canvas.style.display = 'block';
-      $('pdfNav').style.display = 'flex';
-      renderPage(1);
-      toast(`✅ ${file.name} (${totPages} pages)`);
-    } catch (e) {
-      toast('Failed to load PDF: ' + e.message, 3000);
-    }
-  };
-
-  async function renderPage(n) {
-    if (!pdfDoc || rendering) { queued = n; return; }
-    rendering = true;
-    try {
-      const page = await pdfDoc.getPage(n);
-      const wrap = $('pdfWrap');
-      const vp1 = page.getViewport({ scale: 1 });
-      const fitScale = Math.min(
-        (wrap.clientWidth - 24) / vp1.width,
-        (wrap.clientHeight - 24) / vp1.height
-      );
-      const vp = page.getViewport({ scale: fitScale * 2 });
-      canvas.width = vp.width;
-      canvas.height = vp.height;
-      canvas.style.width = (vp.width / 2) + 'px';
-      canvas.style.height = (vp.height / 2) + 'px';
-      await page.render({ canvasContext: ctx, viewport: vp }).promise;
-    } catch (e) {
-      console.warn('Render failed:', e);
-    }
-    rendering = false;
-    updatePdfInfo();
-    if (queued !== null) {
-      const q = queued;
-      queued = null;
-      renderPage(q);
-    }
+function renderMyQs(){
+  const c=$('myQs');
+  const list=Object.values(myQsCache).sort((a,b)=>b.timestamp-a.timestamp);
+  const badge=$('qaBadge');
+  if(!list.length){
+    c.innerHTML='<div class="qa-history-empty">No questions yet.</div>';
+    badge.classList.remove('show');badge.textContent='0';return;
   }
-
-  function updatePdfInfo() {
-    $('pdfPageInfo').textContent = `${curPage} / ${totPages}`;
+  c.innerHTML='';
+  let pending=0;
+  for(const q of list){
+    const res=q.status==='resolved';
+    if(!res)pending++;
+    const d=document.createElement('div');
+    d.className='qa-item'+(res?' resolved':'');
+    d.innerHTML=`
+      <span class="qa-item-status ${res?'resolved':'pending'}">${res?'✓ Resolved':'⏳ Waiting'}</span>
+      <div class="qa-item-text">${esc(q.text)}</div>
+      <div class="qa-item-time">${fmtTime(q.timestamp)}</div>`;
+    c.appendChild(d);
   }
+  badge.textContent=pending;
+  badge.classList.toggle('show',pending>0);
+}
 
-  function goPdfPage(delta) {
-    if (!pdfDoc) return;
-    const n = curPage + delta;
-    if (n >= 1 && n <= totPages) {
-      curPage = n;
-      renderPage(n);
-    }
-  }
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function fmtTime(ts){
+  if(!ts)return'';
+  const d=new Date(ts);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
 
-  $('btnPrevPage').onclick = () => goPdfPage(-1);
-  $('btnNextPage').onclick = () => goPdfPage(1);
+// ── PDF VIEWER ───────────────────────────────────────────────────
+let pdfDoc=null,curPage=1,totPages=0,rendering=false,queued=null;
+const canvas=$('pdfCanvas'), ctx=canvas.getContext('2d');
 
-  // Mouse navigation: LEFT click = next, RIGHT click = previous
-  const pdfWrap = $('pdfWrap');
+$('btnLoadPdf').onclick=()=>$('fileInput').click();
+$('fileInput').onchange=async e=>{
+  const file=e.target.files[0];if(!file)return;
+  try{
+    const buf=await file.arrayBuffer();
+    pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
+    totPages=pdfDoc.numPages;curPage=1;
+    $('pdfEmpty').style.display='none';
+    canvas.style.display='block';
+    renderPage(1);
+    toast(`✅ ${file.name} (${totPages} pages)`);
+  }catch(e){toast('PDF load failed: '+e.message,3000);}
+};
 
-  pdfWrap.addEventListener('click', e => {
-    if (!pdfDoc) return;
-    if (e.target.closest('button, a')) return;
-    goPdfPage(1);
-  });
+async function renderPage(n){
+  if(!pdfDoc||rendering){queued=n;return;}
+  rendering=true;
+  try{
+    const page=await pdfDoc.getPage(n);
+    const wrap=$('pdfWrap');
+    const vp1=page.getViewport({scale:1});
+    const sc=Math.min((wrap.clientWidth-20)/vp1.width,(wrap.clientHeight-20)/vp1.height);
+    const vp=page.getViewport({scale:sc*2});
+    canvas.width=vp.width;canvas.height=vp.height;
+    canvas.style.width=(vp.width/2)+'px';canvas.style.height=(vp.height/2)+'px';
+    await page.render({canvasContext:ctx,viewport:vp}).promise;
+  }catch(e){console.warn('Render failed:',e);}
+  rendering=false;
+  $('pdfPage').textContent=`${curPage} / ${totPages}`;
+  if(queued!==null){const q=queued;queued=null;renderPage(q);}
+}
 
-  pdfWrap.addEventListener('contextmenu', e => {
-    e.preventDefault();
-    if (!pdfDoc) return;
-    if (e.target.closest('button, a')) return;
-    goPdfPage(-1);
-  });
+function goPage(d){
+  if(!pdfDoc)return;
+  const n=curPage+d;
+  if(n>=1&&n<=totPages){curPage=n;renderPage(n);}
+}
+$('btnPrev').onclick=()=>goPage(-1);
+$('btnNext').onclick=()=>goPage(1);
 
-  pdfWrap.addEventListener('auxclick', e => {
-    if (e.button === 1 && pdfDoc) {
-      e.preventDefault();
-      goPdfPage(-1);
-    }
-  });
+// 마우스 왼쪽 클릭 = 다음, 오른쪽 클릭 = 이전
+$('pdfWrap').addEventListener('click',e=>{
+  if(!pdfDoc)return;
+  if(e.target.closest('button,a,.pdf-btn'))return;
+  goPage(1);
+});
+$('pdfWrap').addEventListener('contextmenu',e=>{
+  e.preventDefault();
+  if(!pdfDoc)return;
+  goPage(-1);
+});
+$('pdfWrap').addEventListener('auxclick',e=>{
+  if(e.button===1&&pdfDoc){e.preventDefault();goPage(-1);}
+});
 
-  // Keyboard navigation
-  document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
-    if ($('viewQA').classList.contains('active')) return;
-    if (!pdfDoc) return;
+// 키보드 (Q&A 오버레이 열려있으면 비활성)
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT')return;
+  if($('viewQA').classList.contains('active'))return;
+  if(!pdfDoc)return;
+  if(e.key==='ArrowLeft'||e.key==='PageUp'||e.key==='Backspace'){
+    e.preventDefault();goPage(-1);
+  }else if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '||e.key==='Enter'){
+    e.preventDefault();goPage(1);
+  }else if(e.key==='Home'){e.preventDefault();curPage=1;renderPage(1);}
+  else if(e.key==='End'){e.preventDefault();curPage=totPages;renderPage(totPages);}
+});
 
-    if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'Backspace') {
-      e.preventDefault();
-      goPdfPage(-1);
-    } else if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ' || e.key === 'Enter') {
-      e.preventDefault();
-      goPdfPage(1);
-    } else if (e.key === 'Home') {
-      e.preventDefault();
-      if (pdfDoc) { curPage = 1; renderPage(1); }
-    } else if (e.key === 'End') {
-      e.preventDefault();
-      if (pdfDoc) { curPage = totPages; renderPage(totPages); }
-    }
-  });
-
-  // Re-render on resize
-  let resizeTimeout = null;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => {
-      if (pdfDoc) renderPage(curPage);
-      renderLines(false);
-    }, 150);
-  });
-
-  // ============================================================
-  // Q&A
-  // ============================================================
-  const qaText = $('qaText');
-  const charCount = $('charCount');
-  const btnSend = $('btnSendQuestion');
-
-  qaText.addEventListener('input', () => {
-    const len = qaText.value.length;
-    charCount.textContent = `${len} / 500`;
-    btnSend.disabled = len === 0 || qaText.value.trim().length === 0;
-  });
-
-  qaText.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !btnSend.disabled) {
-      e.preventDefault();
-      sendQuestion();
-    }
-  });
-
-  btnSend.addEventListener('click', sendQuestion);
-
-  async function sendQuestion() {
-    if (!db) { toast('Connection error. Please try again.', 3000); return; }
-    const text = qaText.value.trim();
-    if (!text) return;
-
-    btnSend.disabled = true;
-    btnSend.textContent = 'Sending...';
-
-    try {
-      const ref = db.ref('questions/' + SESSION_ID).push();
-      await ref.set({
-        text: text,
-        clientId: CLIENT_ID,
-        timestamp: Date.now(),
-        status: 'pending'
-      });
-      qaText.value = '';
-      charCount.textContent = '0 / 500';
-      toast('✓ Question sent to the lecturer');
-    } catch (e) {
-      console.warn('Send failed:', e);
-      toast('Failed to send. Please try again.', 3000);
-    } finally {
-      btnSend.disabled = false;
-      btnSend.textContent = 'Send Question';
-    }
-  }
-
-  let myQuestionsCache = {};
-  if (db) {
-    db.ref('questions/' + SESSION_ID).on('value', snap => {
-      const all = snap.val() || {};
-      myQuestionsCache = {};
-      for (const [key, q] of Object.entries(all)) {
-        if (q.clientId === CLIENT_ID) myQuestionsCache[key] = q;
-      }
-      renderMyQuestions();
-    });
-  }
-
-  function renderMyQuestions() {
-    const container = $('myQuestions');
-    const list = Object.values(myQuestionsCache).sort((a,b) => b.timestamp - a.timestamp);
-
-    const badge = $('btnQA').querySelector('.badge');
-    if (list.length === 0) {
-      container.innerHTML = '<div class="qa-history-empty">No questions yet. Ask anything!</div>';
-      badge.classList.remove('show');
-      return;
-    }
-
-    container.innerHTML = '';
-    let pendingCount = 0;
-    for (const q of list) {
-      const isResolved = q.status === 'resolved';
-      if (!isResolved) pendingCount++;
-      const item = document.createElement('div');
-      item.className = 'qa-item' + (isResolved ? ' resolved' : '');
-      item.innerHTML = `
-        <span class="qa-item-status ${isResolved ? 'resolved' : 'pending'}">
-          ${isResolved ? '✓ Resolved' : '⏳ Waiting'}
-        </span>
-        <div class="qa-item-text">${escapeHtml(q.text)}</div>
-        <div class="qa-item-time">${formatTime(q.timestamp)}</div>
-      `;
-      container.appendChild(item);
-    }
-
-    if (pendingCount > 0) {
-      badge.textContent = pendingCount;
-      badge.classList.add('show');
-    } else {
-      badge.classList.remove('show');
-    }
-  }
-
-  function escapeHtml(s) {
-    const d = document.createElement('div');
-    d.textContent = s;
-    return d.innerHTML;
-  }
-  function formatTime(ts) {
-    if (!ts) return '';
-    const d = new Date(ts);
-    const hh = String(d.getHours()).padStart(2,'0');
-    const mm = String(d.getMinutes()).padStart(2,'0');
-    return `${hh}:${mm}`;
-  }
-
-  // KEEP SCREEN ON
-  let wakeLock = null;
-  async function requestWakeLock() {
-    try {
-      if ('wakeLock' in navigator) {
-        wakeLock = await navigator.wakeLock.request('screen');
-      }
-    } catch (e) {}
-  }
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && !wakeLock) requestWakeLock();
-  });
-  document.addEventListener('click', () => {
-    if (!wakeLock) requestWakeLock();
-  }, { once: true });
-
-  renderLines(false);
+// SCREEN ON
+let wakeLock=null;
+async function reqWake(){
+  try{if('wakeLock'in navigator)wakeLock=await navigator.wakeLock.request('screen');}catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&!wakeLock)reqWake();
+});
+document.addEventListener('click',()=>{if(!wakeLock)reqWake();},{once:true});
 </script>
 </body>
 </html>
