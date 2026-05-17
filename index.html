@@ -437,7 +437,6 @@ html,body{height:100%;overflow:hidden;
   .topbar-spacer{display:none;}
   .topbar-right{flex-shrink:0;gap:6px;margin-left:auto;}
   /* Hide less critical buttons on mobile — user can still access via long-press or scroll */
-  #btnSave{display:none;}
   #btnFullscreen{display:none;}
   .brand{display:none;}
   .clock{font-size:12px;padding:4px 8px;}
@@ -469,8 +468,6 @@ html,body{height:100%;overflow:hidden;
   <button class="btn" id="btnQA">
     💬 Q&amp;A <span class="badge" id="qaBadge"></span>
   </button>
-
-  <button class="btn" id="btnSave" title="Save subtitles as .txt">💾 Save Subs</button>
 
   <button class="btn sync-off" id="syncPill" title="Follow lecturer's page automatically">
     <div class="sync-dot"></div>
@@ -844,22 +841,6 @@ window.addEventListener('resize',()=>{
   if(_el)autoFit(_el,$('subLines'));
   if(pdfDoc)setTimeout(()=>renderPage(curPage),100);
 });
-
-// ── SAVE SUBTITLES ─────────────────────────────────────────────────
-$('btnSave').onclick=()=>{
-  if(!subHist.length){toast('No subtitles recorded yet.',2000);return;}
-  const now=new Date();
-  const stamp=KST.format(now).replace(/:/g,'-');
-  let out='KAC Lecture — Live Subtitle Record\n';
-  out+='Recorded: '+stamp+' KST\n';
-  out+='─'.repeat(55)+'\n\n';
-  subHist.forEach(({time,text})=>{out+=`[${time}]  ${text}\n`;});
-  const blob=new Blob([out],{type:'text/plain;charset=utf-8'});
-  const a=Object.assign(document.createElement('a'),
-    {href:URL.createObjectURL(blob),download:`KAC_Subs_${stamp}.txt`});
-  a.click();URL.revokeObjectURL(a.href);
-  toast(`✅ Saved ${subHist.length} lines`);
-};
 
 // ── Q&A ────────────────────────────────────────────────────────────
 function openQA(){$('viewQA').classList.add('on');$('btnQA').classList.add('on');
