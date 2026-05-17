@@ -378,6 +378,22 @@ html,body{height:100%;overflow:hidden;
   margin-top:16px;font-size:10px;color:rgba(139,144,152,.5);letter-spacing:.5px;
 }
 
+/* sync lock overlay on PDF when sync is ON */
+.sync-lock-overlay{
+  position:absolute;inset:0;z-index:5;cursor:not-allowed;
+  display:none;
+}
+.sync-lock-toast{
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.35);
+  color:var(--gold);padding:5px 14px;border-radius:20px;
+  font-size:11px;font-weight:700;letter-spacing:.4px;
+  pointer-events:none;white-space:nowrap;
+  opacity:0;transition:opacity .25s;
+}
+.sync-lock-overlay.on{display:block;}
+.sync-lock-overlay.on:hover .sync-lock-toast{opacity:1;}
+
 /* TOAST */
 .toast{
   position:fixed;bottom:22px;left:50%;
@@ -392,16 +408,23 @@ html,body{height:100%;overflow:hidden;
 
 /* RESPONSIVE */
 @media(max-width:960px){
-  .brand-s,.wx-loc{display:none;}
+  .brand-s{display:none;}
 }
 @media(max-width:700px){
-  .topbar{height:auto;flex-wrap:wrap;padding:7px 10px;gap:6px;}
+  /* Keep core buttons visible; collapse secondary ones */
+  .topbar{height:auto;flex-wrap:wrap;padding:7px 10px;gap:5px;}
   .topbar-spacer{display:none;}
-  .topbar-right{flex-wrap:wrap;gap:6px;}
-  .clock{font-size:13px;}
-  .sub-area{height:140px;}
-  .sub-stage{padding:8px 14px;}
+  .topbar-right{flex-shrink:0;gap:6px;margin-left:auto;}
+  /* Hide less critical buttons on mobile — user can still access via long-press or scroll */
+  #btnSave{display:none;}
+  .brand{display:none;}
+  .clock{font-size:12px;padding:4px 8px;}
+  .sub-area{height:130px;}
+  .sub-stage{padding:6px 12px;}
   .pdf-hint{display:none;}
+  .sync-banner{flex-direction:column;align-items:flex-start;gap:10px;padding:14px 16px;}
+  .sync-banner-btns{width:100%;display:flex;gap:8px;}
+  .sync-banner-yes,.sync-banner-no{flex:1;text-align:center;}
 }
 </style>
 </head>
@@ -477,6 +500,10 @@ html,body{height:100%;overflow:hidden;
       </div>
     </div>
     <div class="pdf-wrap" id="pdfWrap">
+      <!-- Sync lock overlay: blocks manual navigation when sync is ON -->
+      <div class="sync-lock-overlay" id="syncLock">
+        <div class="sync-lock-toast">🔗 Sync ON — following lecturer</div>
+      </div>
       <div class="pdf-empty" id="pdfEmpty">
         <div class="pdf-empty-icon">📖</div>
         <div class="pdf-empty-title">No material loaded</div>
@@ -624,10 +651,34 @@ function setConn(on,lbl){
   $('conn').classList.toggle('on',on);
   $('connTxt').textContent=lbl;
   $('liveDot').classList.toggle('on',on);
+  // Update subtitle empty hint based on connection
+  updateSubHint();
 }
 if(db)db.ref('.info/connected').on('value',s=>{
   setConn(!!s.val(),s.val()?'Connected':'Reconnecting…');
 });
+
+// ── PRESENCE ───────────────────────────────────────────────────────
+// Register this student in Firebase so instructor can see headcount
+let _presRef=null;
+if(db){
+  _presRef=db.ref('presence/'+SESSION+'/'+CID);
+  _presRef.set(true);
+  // Remove on disconnect
+  _presRef.onDisconnect().remove();
+}
+
+// ── SUBTITLE STATUS HINT ───────────────────────────────────────────
+function updateSubHint(){
+  const el=$('subEmpty');
+  if(!el)return;
+  const connected=$('conn').classList.contains('on');
+  if(!connected){
+    el.textContent='⚠️ Connecting to lecture…';
+  } else if(!lastFinal&&!interim){
+    el.textContent='🎤 Waiting for lecturer to start…';
+  }
+}
 
 // ── PAGE SYNC ──────────────────────────────────────────────────────
 let syncOn=false;
@@ -652,6 +703,8 @@ function setSyncUI(on){
   btn.classList.toggle('sync-on',on);
   btn.classList.toggle('sync-off',!on);
   $('syncTxt').textContent=on?'Sync: ON':'Sync: OFF';
+  // Lock/unlock manual page navigation
+  $('syncLock').classList.toggle('on',on);
   if(on){
     // Immediately jump to instructor's current page
     if(pdfDoc&&_lastKnownPage!=null){
@@ -695,7 +748,7 @@ $('btnSmall').onclick=()=>setSubSz(Math.max(16,subSz-3));
 function renderSub(anim){
   const sl=$('subLines'),se=$('subEmpty');
   const txt=interim||lastFinal;
-  if(!txt){sl.style.display='none';se.style.display='';_el=null;return;}
+  if(!txt){sl.style.display='none';se.style.display='';_el=null;updateSubHint();return;}
   sl.style.display='';se.style.display='none';
 
   const cls='sub-line'+(interim?' interim':'')+(anim?' anim':'');
